@@ -1,0 +1,128 @@
+package test.game.meshregion;
+
+import org.lwjgl.opengl.*;
+
+import nidefawl.qubes.gl.*;
+import static org.lwjgl.opengl.NVVertexBufferUnifiedMemory.*;
+import static org.lwjgl.opengl.NVShaderBufferLoad.*;
+import nidefawl.qubes.meshing.BlockFaceAttr;
+import nidefawl.qubes.util.GameError;
+
+public class MeshListInterleavedNV_Half extends MeshList {
+
+	static int vao = 0;
+	final static int VERT_LEN1 = (2) << 2;
+	private VertexBuffer bufferDataVertex;
+	final static int[] attrOffsets = new int[6];
+
+	public MeshListInterleavedNV_Half() {
+		super(VMeshBufferInterleavedNV.class);
+		this.bufferDataVertex = new VertexBuffer(1024 * 1024);
+	}
+
+	@Override
+	public void init() {
+		if (vao == 0) {
+			setupVAO();
+		}
+		for (VMeshBuffer m : array) {
+			((VMeshBufferInterleavedNV) m).vertexBuffer = new GLTriBuffer(GL15.GL_STATIC_DRAW);
+		}
+	}
+
+	@Override
+	public void draw() {
+    	this.bindVAO();
+		GL11.glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+		GL11.glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
+		for (VMeshBuffer m : array) {
+			VMeshBufferInterleavedNV il = (VMeshBufferInterleavedNV) m;
+			GLVBO vboV = il.vertexBuffer.getVbo();
+			GLVBO vboI = il.vertexBuffer.getVboIndices();
+			for (int i = 0; i < 6; i++) {
+				glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, i, vboV.addr + attrOffsets[i], vboV.size - attrOffsets[i]);
+			}
+			glBufferAddressRangeNV(GL_ELEMENT_ARRAY_ADDRESS_NV, 0, vboI.addr, vboI.size);
+			GL11.glDrawElements(GL11.GL_TRIANGLES, il.vertexBuffer.getIdxCount(), GL11.GL_UNSIGNED_INT, 0);
+		}
+		GL11.glDisableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
+		GL11.glDisableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+	}
+
+	@Override
+	public void bindVAO() {
+		GL30.glBindVertexArray(vao);
+	}
+
+
+	@Override
+	public void addFace(BlockFaceAttr attr) {
+		attr.putFormat2(bufferDataVertex);
+	}
+
+	@Override
+	public void reset() {
+		bufferDataVertex.reset();
+	}
+
+	@Override
+	public void upload(int x, int z) {
+		System.out.println(getClass().getSimpleName() + " upload " + (this.bufferDataVertex.getPos() * 4)
+				+ " bytes for vertex data");
+		System.out.println(getClass().getSimpleName() + " upload " + (this.bufferDataVertex.getTriIdxPos() * 4)
+				+ " bytes for index data");
+		VMeshBufferInterleavedNV m = (VMeshBufferInterleavedNV) getMesh(x, z);
+		m.vertexBuffer.upload(this.bufferDataVertex);
+	}
+	
+
+	static void setupVAO() {
+		vao = GL30.glGenVertexArrays();
+		GL30.glBindVertexArray(vao);
+		int offset = 0;
+		// POS
+		GL20.glEnableVertexAttribArray(0);
+		glVertexAttribFormatNV(0, 4, GL30.GL_HALF_FLOAT, false, VERT_LEN1);
+		attrOffsets[0] = offset * 4;
+//		GL43.glVertexAttribBinding(0, 0); // bind to first vertex buffer
+		offset += 2;
+//		// NORMAL
+//		GL20.glEnableVertexAttribArray(1);
+//		glVertexAttribFormatNV(1, 3, GL11.GL_BYTE, false, VERT_LEN1);
+//		attrOffsets[1] = offset * 4;
+////		GL43.glVertexAttribBinding(1, 0); // bind to first vertex buffer
+//		offset += 1;
+//
+//		// 1 BYTE UNUSED (normal has 3 bytes)
+//
+//		// TEXCOORD
+//		GL20.glEnableVertexAttribArray(2);
+//		glVertexAttribFormatNV(2, 2, GL30.GL_HALF_FLOAT, false, VERT_LEN1);
+//		attrOffsets[2] = offset * 4;
+////		GL43.glVertexAttribBinding(2, 0); // bind to first vertex buffer
+//		offset += 1;
+//		// COLOR
+//		GL20.glEnableVertexAttribArray(3);
+//		glVertexAttribFormatNV(3, 4, GL11.GL_UNSIGNED_BYTE, true, VERT_LEN1);
+//		attrOffsets[3] = offset * 4;
+////		GL43.glVertexAttribBinding(3, 0); // bind to first vertex buffer
+//		offset += 1;
+//		// BLOCKINFO
+//		GL20.glEnableVertexAttribArray(4);
+//		glVertexAttribIFormatNV(4, 4, GL11.GL_UNSIGNED_SHORT, VERT_LEN1);
+//		attrOffsets[4] = offset * 4;
+////		GL43.glVertexAttribBinding(4, 0); // bind to first vertex buffer
+//		offset += 2;
+//		// LIGHTINFO
+//		GL20.glEnableVertexAttribArray(5);
+//		glVertexAttribIFormatNV(5, 2, GL11.GL_UNSIGNED_SHORT, VERT_LEN1);
+//		attrOffsets[5] = offset * 4;
+////		GL43.glVertexAttribBinding(5, 0); // bind to first vertex buffer
+//		offset += 1;
+//		if (offset<<2 != VERT_LEN1) {
+//			throw new GameError("Invalid stride");
+//		}
+		GL30.glBindVertexArray(0);
+		Engine.checkGLError("glBindVertexArray");
+	}
+}
