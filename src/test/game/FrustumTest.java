@@ -14,7 +14,7 @@ import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.input.InputController;
+import nidefawl.qubes.input.KeybindManager;
 import nidefawl.qubes.render.region.MeshedRegion;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;

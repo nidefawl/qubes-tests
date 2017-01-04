@@ -3,7 +3,7 @@
  */
 package test.game;
 
-import nidefawl.qubes.input.InputController;
+import nidefawl.qubes.input.KeybindManager;
 import nidefawl.qubes.util.GameMath;
 import nidefawl.qubes.vec.Vec3D;
 
@@ -22,13 +22,13 @@ public class CameraController {
     private float   strafe;
     private float   maxSpeed = 0.82F;
     private float   jump;
-    private float   sneak;
+    private boolean   sneak;
 
 	/**
 	 * @param movement 
 	 * 
 	 */
-	public void update(InputController movement) {
+	public void update(KeybindManager movement) {
         float fa = 0.14F;
         float mx = movement.mX * fa;
         float my = -movement.mY * fa;
@@ -42,7 +42,7 @@ public class CameraController {
         this.lastYaw += diffY;
         this.strafe = movement.strafe;
         this.forward = movement.forward;
-        this.jump = movement.jump;
+        this.jump = movement.jump?1:0;
         this.sneak = movement.sneak;
         movement.mX = 0;
         movement.mY = 0;
@@ -53,7 +53,7 @@ public class CameraController {
 
         maxSpeed = 0.9F;
         float var7 = 0.0F;
-        this.mot.y -= 0.98D * this.sneak;
+        this.mot.y -= 0.98D * (this.sneak?1:0);
         this.mot.y += 0.98D * this.jump;
 
         float f4 = 0.0F;

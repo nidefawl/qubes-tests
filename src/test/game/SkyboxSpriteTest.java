@@ -19,24 +19,22 @@ import nidefawl.qubes.assets.AssetTexture;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.InputController;
-import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.meshing.BlockFaceAttr;
 import nidefawl.qubes.perf.GPUProfiler;
-import nidefawl.qubes.perf.GPUTaskProfile;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
-import nidefawl.qubes.vec.*;
-import test.game.TestPointSprites.Cloud;
-import test.game.TestPointSprites.PointSprite;
+import nidefawl.qubes.vec.Vec3D;
+import nidefawl.qubes.vec.Vector3f;
 
 public class SkyboxSpriteTest extends GameBase {
 	final static int MAX_SPRITES = 1024*64;
+    final static int SKYBOX_RES = 512;
 	final CameraController cameraController = new CameraController();
 	private FrameBuffer sceneFB;
     public FrameBuffer  fbDeferred;
+    public FrameBuffer  fbSkybox;
 	public static void main(String[] args) {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
@@ -58,21 +56,27 @@ public class SkyboxSpriteTest extends GameBase {
 
 	Shader spriteShader;
 	Shader shaderDeferred;
-    public Shader       skyShader;
-    public Shader       cloudsShader;
-    private TesselatorState skybox1;
-    private TesselatorState skybox2;
-    public Vector3f           skyColor        = new Vector3f(0.34f, 0.54f, 0.96f);
-//  public Vector3f           fogColor        = new Vector3f(0.7F, 0.82F, 1F);
-  public Vector3f           fogColor        = new Vector3f(0.34f, 0.54f, 0.96f);
-private String error;
+
+	public Shader skyShader;
+	public Shader cloudsShader;
+	private Shader skybox;
+
+	private TesselatorState skybox1;
+	private TesselatorState skybox2;
+
+	public Vector3f skyColor = new Vector3f(0.34f, 0.54f, 0.96f);
+	public Vector3f fogColor = new Vector3f(0.34f, 0.54f, 0.96f);
+	
+	private String error;
+	final CubeMapCamera cubeMatrix = new CubeMapCamera();
 
     public void initShaders() {
         try {
             AssetManager assetMgr = AssetManager.getInstance();
             Shader particle = assetMgr.loadShader(newshaders, "particle/pointsprite");
-
-            Shader cloudsShader = assetMgr.loadShader(newshaders, "sky/cloudsv");
+            Shader cloudsShader = assetMgr.loadShader(newshaders, "sky/clouds");
+            Shader skybox = assetMgr.loadShader(newshaders, "sky/skybox_cubemap");
+//            Shader cloudsShader = assetMgr.loadShader(newshaders, "sky/sky");
             Shader new_deferred = assetMgr.loadShader(newshaders, "post/deferred", new IShaderDef() {
                 @Override
                 public String getDefinition(String define) {
@@ -89,6 +93,7 @@ private String error;
             newshaders = tmp;
             shaderDeferred = new_deferred;
             skyShader = sky;
+            this.skybox = skybox;
             this.cloudsShader = cloudsShader;
             spriteShader = particle;
             this.shaderDeferred.enable();
@@ -123,28 +128,28 @@ private String error;
 	private String stats;
 	@Override
 	public void onStatsUpdated() {
-		ArrayList<String> n = this.glProfileResults;
-		if (!n.isEmpty() && n.size()> 1) {
-			String s = "";
-			for (String s2 : n) {
-				s+=s2+"\n";
-			}
-			this.stats=String.format("%d FPS (%.2fms)\n%d clouds\n%d sprites",
-					lastFPS, Stats.avgFrameTime, this.clouds.size(), this.totalSprites);
-			this.stats+="\n"+s;
-			setTitle(stats);
-		}
+//		ArrayList<String> n = this.glProfileResults;
+//		if (!n.isEmpty() && n.size()> 1) {
+//			String s = "";
+//			for (String s2 : n) {
+//				s+=s2+"\n";
+//			}
+//			this.stats=String.format("%d FPS (%.2fms)\n%d clouds\n%d sprites",
+//					lastFPS, Stats.avgFrameTime, this.clouds.size(), this.totalSpritesRendered);
+//			this.stats+="\n"+s;
+			setTitle(""+lastFPS);
+//		}
 
 		
 		
 		
 		tick--;
 		if (tick <= 0) {
-			this.stats=String.format("%d FPS (%.2fms)\n%d clouds\n%d sprites",
-					lastFPS, Stats.avgFrameTime, this.clouds.size(), this.totalSprites);
-			setTitle(stats);
-			initShaders();
-			Shaders.initShaders();
+//			this.stats=String.format("%d FPS (%.2fms)\n%d clouds\n%d sprites",
+//					lastFPS, Stats.avgFrameTime, this.clouds.size(), this.totalSpritesRendered);
+//			setTitle(stats);
+//			initShaders();
+//			Shaders.initShaders();
 			tick = 4;
 
 //	        redraw();
@@ -199,56 +204,40 @@ private String error;
     final static Vector3f tmp = new Vector3f();
 	@Override
 	public void render(float f) {
-		glEnable(GL11.GL_DEPTH_TEST);
+		
+		Engine.enableDepthMask(false);
+		if (ticksran/70%2!=0) {
+			glDisable(GL11.GL_DEPTH_TEST);
+			UniformBuffer.uboMatrix3D_Temp.bind();
+			this.fbSkybox.bind();
+	        Engine.setViewport(0, 0, SKYBOX_RES, SKYBOX_RES);
+			for (int c = 0; c < 6; c++) {
+				this.fbSkybox.bindCubeMapFace(c);
+		        cubeMatrix.setupScene(c, Engine.camera.getPosition());
+		        renderSky(f);
+			}
+			Engine.setDefaultViewport();
+			glDisable(GL_BLEND);
+			
+			UniformBuffer.uboMatrix3D.bind();
+			
+			Engine.enableDepthMask(true);
+			glEnable(GL11.GL_DEPTH_TEST);
+		}
+		
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
-
-		Engine.enableDepthMask(false);
-		
-
-		glDisable(GL11.GL_DEPTH_TEST);
-//		glDisable(GL_BLEND);
-//		skyShader.enable();
-//		skybox1.bindAndDraw(GL_QUAD_STRIP);
-//		skybox2.bindAndDraw(GL_QUADS);
-//		if (GL_ERROR_CHECKS)
-//			Engine.checkGLError("skyShader.drawSkybox");
-//		Shader.disable();
-//		
-		
-		
-		glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
-		cloudsShader.enable();
-		if (GPUProfiler.PROFILING_ENABLED) {
-			GPUProfiler.start("clouds");
+		if (ticksran/70%2!=0) {
+			skybox.enable();
+	        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_CUBE_MAP, this.fbSkybox.getTexture(0));
+			Engine.drawFullscreenQuad();
 		}
-		Engine.drawFullscreenQuad();
-		if (GPUProfiler.PROFILING_ENABLED) {
-			GPUProfiler.end();
-		}
-
-
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texCloud);
-        spriteShader.enable();
-        GL30.glBindVertexArray(vaoPos);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.vboIdx.getVboId());
-        int nSprites = (int) GameMath.clamp(Math.round(this.totalSprites*(WEATHER*0.7f+0.3f)), 0, this.totalSprites);
-//        GL31.glDrawElementsInstanced(GL11.GL_TRIANGLES, 6, GL11.GL_UNSIGNED_INT, 0, nSprites);
-        GL30.glBindVertexArray(0);
-        Engine.bindVAO(null);
-        FrameBuffer.unbindFramebuffer();
 		
-		
-		Engine.enableDepthMask(true);
-
-		glDisable(GL_BLEND);
 		glDisable(GL11.GL_DEPTH_TEST);
+		if (ticksran/70%2==0) {
+			renderSky(f);
+		}
+		
 		Engine.checkGLError("Pass0");
 		fbDeferred.bind();
 		fbDeferred.clearFrameBuffer();
@@ -267,13 +256,14 @@ private String error;
 		glClearColor(0, 0, 0, 0);
 		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 		Shaders.tonemap.enable();
-		Shaders.tonemap.setProgramUniform1f("constexposure", 70);
+		Shaders.tonemap.setProgramUniform1f("constexposure", 30);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
 		Engine.drawFullscreenQuad();
 
 
 		glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);
 		Tess.instance.add(400, 440);
@@ -289,6 +279,41 @@ private String error;
 		
 		// Engine.checkGLError("drawAll");
 	}
+
+	private void renderSky(float f) {
+		glDisable(GL_BLEND);
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texNoise);
+		cloudsShader.enable();
+		cloudsShader.setProgramUniform1f("rainStrength", WEATHER);
+		cloudsShader.setProgramUniform1i("worldTime", TIME);
+		if (GPUProfiler.PROFILING_ENABLED) {
+			GPUProfiler.start("clouds");
+		}
+		Engine.drawFullscreenQuad();
+		if (GPUProfiler.PROFILING_ENABLED) {
+			GPUProfiler.end();
+		}
+
+
+		glEnable(GL_BLEND);
+//        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        spriteShader.enable();
+		float weatherStr = (WEATHER);
+		weatherStr = GameMath.powf(weatherStr*0.9f, 1.6f);
+        spriteShader.setProgramUniform1f("transparency", weatherStr);
+//      int nSprites = (int) GameMath.clamp(Math.round(this.totalSprites*(WEATHER*0.7f+0.3f)), 0, this.totalSprites);
+        GL30.glBindVertexArray(vaoPos);
+        for (int i = 0; i < this.texClouds.length; i++) {
+            storeSprites(f, i);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, this.vboIdx.getVboId());
+            GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texClouds[i]);
+            GL31.glDrawElementsInstanced(GL11.GL_TRIANGLES, 6, GL11.GL_UNSIGNED_INT, 0, this.storedSprites);
+        }
+        GL30.glBindVertexArray(0);
+        Engine.bindVAO(null);
+	}
+
 
 	private Vec3D tmpPos = new Vec3D();
 	@Override
@@ -321,6 +346,7 @@ private String error;
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();
 			if (fbDeferred != null) fbDeferred.release();
+			if (fbSkybox != null) fbSkybox.release();
 	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);
@@ -336,6 +362,11 @@ private String error;
 	        Engine.setSceneFB(sceneFB);
 			FrameBuffer.unbindFramebuffer();
 	        fbDeferred = FrameBuffer.make(null, displayWidth, displayHeight, GL_RGB16F);
+	        fbSkybox = new FrameBuffer(SKYBOX_RES, SKYBOX_RES);
+	        fbSkybox.setTextureType(GL13.GL_TEXTURE_CUBE_MAP);
+	        fbSkybox.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
+//	        fbSkybox.setHasDepthAttachment();
+	        fbSkybox.setup(null);
         }
         glActiveTexture(GL_TEXTURE0);
 	}
@@ -344,6 +375,10 @@ private String error;
 	public void tick() {
 		this.cameraController.tickUpdate();
 		this.updateSpritesTick();
+		if (((ticksran-1)/70%2==0) != (ticksran/70%2==0)) {
+			
+			System.out.println((ticksran/70%2==0) ? "direct" : "cubemap");
+		}
 	}
 
 	@Override
@@ -353,6 +388,7 @@ private String error;
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
+		this.cubeMatrix.init();
 	}
 
 
@@ -362,23 +398,32 @@ private String error;
 	private ByteBuffer bufMat;
 	private FloatBuffer bufMatFloat;
 	ReallocIntBuffer vertexUploadDirectBuf;
-	private int texCloud;
 	private FontRenderer font;
-	int totalSprites = 0;
+	int storedSprites = 0;
+	int totalSpritesRendered = 0;
 	void updateSprites(float ftime) {
-		this.bufMatFloat.clear();
-		totalSprites = 0;
 		for (int i = 0; i < clouds.size(); i++) {
 			Cloud cloud = clouds.get(i);
 			cloud.update(ftime);
-			totalSprites+=cloud.store(this.bufMatFloat);
+		}
+		
+	}
+	void storeSprites(float ftime, int n) {
+		this.bufMatFloat.clear();
+		storedSprites = 0;
+		for (int i = 0; i < clouds.size(); i++) {
+			Cloud cloud = clouds.get(i);
+			if (cloud.texture == n) {
+				storedSprites+=cloud.store(this.bufMatFloat);
+			}
 		}
 		this.bufMatFloat.flip();
 		this.vboAttr.upload(GL15.GL_ARRAY_BUFFER, this.bufMat, this.bufMatFloat.limit()*4);
 //		System.out.println("totalSprites "+totalSprites);
 		
 	}
-	private int image;
+	private int[] texClouds;
+	private int texNoise;
 	void updateSpritesTick() {
 		for (int i = 0; i < clouds.size(); i++) {
 			Cloud sprite = clouds.get(i);
@@ -388,25 +433,27 @@ private String error;
 	public void redraw() {
 		clouds.clear();
 		Random r = new Random(4444);
-		float l = 1.0f;
-		float h = 2.6f;
+		float l = 0.2f;
+		float hl = 0.3f;
+		float hu = 1.0f;
 		float motRange = 0.05f;
-		float rotRange = 0.008f;
-		float minBr=0.01f;
-		float maxBr=0.25f;
-		float minSize = 8;
-		float maxSize = 32;
+		float rotRange = 0.0005f;
+		float minBr=0.25f;
+		float maxBr=1.0f;
+		float minSize = 22;
+		float maxSize = 88;
 		float l2 = minSize*0.6f;
 		float h2 = minSize*0.3f;
-		for (int i = 0; i < 25; i++) {
+		for (int i = 0; i < 4; i++) {
 			Cloud cloud = new Cloud();
+			cloud.texture = r.nextInt(this.texClouds.length);
 			cloud.pos.x = r.nextFloat()*l*2.0f-l;
-			cloud.pos.y = r.nextFloat()*l*2.0f+1.73f;
+			cloud.pos.y = hl+(hu-hl)*r.nextFloat();
 			cloud.pos.z = r.nextFloat()*l*2.0f-l;
 //			cloud.mot.x = (r.nextFloat()*2.0f-1.0f)*motRange;
 //			cloud.mot.y = 0;
 //			cloud.mot.z = (r.nextFloat()*2.0f-1.0f)*motRange;
-			for (int j = 0; j < 25; j++) {
+			for (int j = 0; j < 8; j++) {
 				PointSprite sprite = new PointSprite();
 				sprite.xoffset = r.nextFloat();
 				sprite.yoffset = r.nextFloat();
@@ -414,9 +461,10 @@ private String error;
 				sprite.posOffset.y = r.nextFloat()*h2*2.0f-h2;
 				sprite.posOffset.z = r.nextFloat()*l2*2.0f-l2;
 				sprite.setSize(minSize+r.nextFloat()*(maxSize-minSize));
-				float f = (minBr+r.nextFloat()*(maxBr-minBr));
-				sprite.setCol(f, f, f);
-				sprite.rot = sprite.lastRot = r.nextFloat()*0.23f;
+				float f1 = (minBr+r.nextFloat()*(maxBr-minBr));
+				float f2 = f1*0.7f+0.3f*(minBr+r.nextFloat()*(maxBr-minBr));
+				sprite.setCol(f1, f2, f2);
+				sprite.rot = sprite.lastRot = r.nextFloat()*0.43f;
 				
 				sprite.rotspeed = (r.nextFloat()*2.0f-1.0f)*rotRange;
 				cloud.sprites.add(sprite);
@@ -473,6 +521,8 @@ private String error;
         vertexBuf.put(Half.fromFloat(0) << 16 | Half.fromFloat(0));
 	}
 	static class Cloud {
+		public int texture;
+
 		List<PointSprite> sprites = Lists.newArrayList();
 
 		Vector3f mot;
@@ -542,16 +592,16 @@ private String error;
 		    renderRot = lastRot+(rot-lastRot)*f;
 		    Vector3f.interp(lastCol, col, f, renderCol);
 		    this.renderPos.set(this.posOffset);
-//		    {
-//			    float f2 = (tick+f+xoffset)/220.0f;
-//			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
-//			    renderPos.x += GameMath.sin(f2);
-//		    }
-//		    {
-//			    float f2 = (tick+f+yoffset)/220.0f;
-//			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
-//			    renderPos.y += GameMath.sin(f2);
-//		    }
+		    {
+			    float f2 = (tick+f+xoffset)/15520.0f;
+			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
+			    posOffset.x += 0.0001f*GameMath.sin(f2);
+		    }
+		    {
+			    float f2 = (tick+f+yoffset)/21220.0f;
+			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
+			    posOffset.y += 0.0001f*GameMath.sin(f2);
+		    }
 		    
 		}
 
@@ -564,13 +614,13 @@ private String error;
 			this.col.x = this.initCol.x*(weatherStr);
 			this.col.y = this.initCol.y*(weatherStr);
 			this.col.z = this.initCol.z*(weatherStr);
-			size = initSize*(WEATHER*0.2f+0.8f);
+			size = initSize*(WEATHER*0.5f+0.5f);
 			rot += rotspeed;
 			tick++;
 		}
 	}
-	public static float WEATHER = 1.0f;
-	public static int TIME = 4200;
+	public static float WEATHER = 0.40f;
+	public static int TIME = 5850;
 	@Override
 	public void lateInitGame() {
 		this.font=FontRenderer.get(0, 22, 0);
@@ -616,14 +666,23 @@ private String error;
 		buildQuad(this.vertexBuf);
 		int intsize = this.vertexBuf.storeVertexData(this.vertexUploadDirectBuf);
 		this.vboStaticQuad.upload(GL15.GL_ARRAY_BUFFER, this.vertexUploadDirectBuf.getByteBuf(), intsize*4);
-        AssetTexture tex = AssetManager.getInstance().loadPNGAsset("textures/cloud.png");
-        texCloud = TextureManager.getInstance().makeNewTexture(tex, false, true, -1);
+		ArrayList<AssetTexture> clouds = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+	        AssetTexture tex = AssetManager.getInstance().loadPNGAsset("textures/sky/cloud"+i+".png", i>0);
+			if (tex == null)
+				break;
+			clouds.add(tex);
+		}
+		this.texClouds = new int[clouds.size()];
+		for (int i = 0; i < clouds.size(); i++) {
+			this.texClouds[i] = TextureManager.getInstance().makeNewTexture(clouds.get(i), false, true, -1);
+		}
+		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/tex10.png");
+		this.texNoise = TextureManager.getInstance().makeNewTexture(t, true, true, 0);
 		redraw();
 
 		initShaders();
 
-		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/tex10.png");
-		this.image = TextureManager.getInstance().makeNewTexture(t, true, true, 0);
 	}
 
 	@Override

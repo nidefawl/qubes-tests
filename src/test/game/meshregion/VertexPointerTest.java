@@ -20,7 +20,7 @@ import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.InputController;
+import nidefawl.qubes.input.KeybindManager;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.meshing.BlockFaceAttr;
 import nidefawl.qubes.perf.GPUProfiler;

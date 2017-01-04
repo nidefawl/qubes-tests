@@ -19,7 +19,7 @@ import nidefawl.qubes.assets.AssetTexture;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.InputController;
+import nidefawl.qubes.input.KeybindManager;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.meshing.BlockFaceAttr;
 import nidefawl.qubes.shader.*;
@@ -30,7 +30,7 @@ import nidefawl.qubes.vec.*;
 
 public class TestPointSprites extends GameBase {
 	final static int MAX_SPRITES = 1024*64;
-    public InputController  movement           = new InputController();
+    public KeybindManager  movement           = new KeybindManager();
 	final CameraController cameraController = new CameraController();
 	private FrameBuffer sceneFB;
     public FrameBuffer  fbDeferred;
