@@ -24,7 +24,6 @@ import nidefawl.qubes.vec.Vec3D;
 
 public class VR {
 
-	public static boolean DEBUG_PRINT = false;
 	public static VR_IVRSystem_FnTable vrsystem;
 	public static class VRViewProjection {
 		public Matrix4f projLeft = new Matrix4f();
@@ -34,37 +33,23 @@ public class VR {
 		public Matrix4f viewLeft=new Matrix4f();
 		public Matrix4f viewRight=new Matrix4f();
 		public void setEyeToHeadTransform() {
-			if (!READ_MATS) {
-				HmdMatrix34_t matL = vrsystem.GetEyeToHeadTransform.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Left);
-				OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(matL, this.poseEyeLeft);
-				if (DEBUG_PRINT) {
-					System.out.println("this.poseEyeLeft "+this.poseEyeLeft);
-					System.out.println("this.poseEyeRight "+this.poseEyeRight);
-				}
-			}
+			HmdMatrix34_t matL = vrsystem.GetEyeToHeadTransform.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Left);
+			OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(matL, this.poseEyeLeft);
 			HmdMatrix34_t matR = vrsystem.GetEyeToHeadTransform.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Right);
 			OpenVRUtil.convertSteamVRMatrix3ToMatrix4f(matR, this.poseEyeRight);
 		}
 		public void setEyeProj(float nearClip, float farClip)
 		{
-			if (!READ_MATS) {
-				HmdMatrix44_t matL = vrsystem.GetProjectionMatrix.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Left, nearClip, farClip, JOpenVRLibrary.EGraphicsAPIConvention.EGraphicsAPIConvention_API_OpenGL);
-
-				OpenVRUtil.convertSteamVRMatrix4ToMatrix4f(matL, this.projLeft);
-				if (DEBUG_PRINT) {
-					System.out.println("this.projLeft "+this.projLeft);
-					System.out.println("this.projRight "+this.projRight);
-				}
-				
-			}
+			HmdMatrix44_t matL = vrsystem.GetProjectionMatrix.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Left, nearClip, farClip, JOpenVRLibrary.EGraphicsAPIConvention.EGraphicsAPIConvention_API_OpenGL);
+			OpenVRUtil.convertSteamVRMatrix4ToMatrix4f(matL, this.projLeft);
 			HmdMatrix44_t matR = vrsystem.GetProjectionMatrix.apply(JOpenVRLibrary.EVREye.EVREye_Eye_Right, nearClip, farClip, JOpenVRLibrary.EGraphicsAPIConvention.EGraphicsAPIConvention_API_OpenGL);
 			OpenVRUtil.convertSteamVRMatrix4ToMatrix4f(matR, this.projRight);
 		}
 		public void update(float f) {
-//			setEyeProj(Engine.znear, Engine.zfar);
+			setEyeProj(Engine.znear, Engine.zfar);
 			setEyeToHeadTransform();
 			Matrix4f.mul(this.poseEyeLeft, VR.hmdPose, viewLeft);
-			Matrix4f.mul(this.poseEyeRight, VR.hmdPose2, viewRight);
+			Matrix4f.mul(this.poseEyeRight, VR.hmdPose, viewRight);
 		}
 	}
 	static class VRSettings {
@@ -94,7 +79,6 @@ public class VR {
 	private static Matrix4f[] poseMatrices;
 	private static Vec3D	[] deviceVelocity;
 	public static final Matrix4f hmdPose = new Matrix4f();
-	public static final Matrix4f hmdPose2 = new Matrix4f();
 	private static boolean headIsTracking;
 	// Controllers
 	private static int RIGHT_CONTROLLER = 0;
@@ -416,20 +400,17 @@ public class VR {
 		if ( hmdTrackedDevicePoses[JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd].bPoseIsValid != 0 )
 		{
 				
-			OpenVRUtil.Matrix4fCopy(poseMatrices[JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd], hmdPose2);
+			OpenVRUtil.Matrix4fCopy(poseMatrices[JOpenVRLibrary.k_unTrackedDeviceIndex_Hmd], hmdPose);
 			//hellovr does hmdPose.invert() here
-			hmdPose2.invert();
+			hmdPose.invert();
 			headIsTracking = true;
 //			System.out.println("headIsTracking "+hmdPose);
 		}
 		else
 		{
 			headIsTracking = false;
-			OpenVRUtil.Matrix4fSetIdentity(hmdPose2);
-			hmdPose2.m31 = 1.62f;
-		}
-		if (!READ_MATS) {
-			hmdPose.load(hmdPose2);
+			OpenVRUtil.Matrix4fSetIdentity(hmdPose);
+			hmdPose.m31 = 1.62f;
 		}
 
 //		findControllerDevices();
@@ -576,7 +557,7 @@ public class VR {
 		case 2:
 			Engine.getMatSceneP().load(Engine.getMatSceneP_internal());
 			Engine.getMatSceneP().update();
-			Matrix4f.mul(VR.cam.viewRight, Engine.camera.getViewMatrix(), tmpMat);
+			tmpMat.load(Engine.camera.getViewMatrix());
 			break;
 		}
     	Engine.updateCamera(tmpMat, Engine.camera.getPosition());

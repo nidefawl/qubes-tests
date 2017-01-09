@@ -514,12 +514,6 @@ public class ParticlePerformanceTest extends GameBase {
 			case GLFW.GLFW_KEY_7:
 				initShaders();
 				break;
-			case GLFW.GLFW_KEY_8:
-				VR.DEBUG_PRINT=!VR.DEBUG_PRINT;
-				break;
-			case GLFW.GLFW_KEY_9:
-				draw = !draw;
-				break;
 			}
 		}
 		if (action == GLFW.GLFW_REPEAT||action == GLFW.GLFW_PRESS) {
@@ -685,59 +679,57 @@ public class ParticlePerformanceTest extends GameBase {
         int data2 = cubeFormat2.upload(buf2);
         System.out.println("uploaded "+(data2*4)+" bytes for format 2");
 	}
-	boolean draw = true;
 	@Override
 	public void render(float f) {
 
 
 		for (int i = 0; i < 3; i++) {
-			if (draw || i == 2) {
-				VR.setupCamera(i, f);
-		        VR.setViewPort(i);
-				
-				
-				Engine.getSceneFB().bind();
-				Engine.getSceneFB().clearFrameBuffer();
-				Engine.enableDepthMask(false);
-				glDisable(GL_BLEND);
-				skybox.enable();
-				Engine.drawFullscreenQuad();
-				Engine.enableDepthMask(true);
-				glEnable(GL11.GL_DEPTH_TEST);
-//				Shaders.colored3D.enable();
-//				tessState.drawQuads();
-//				
-				glEnable(GL11.GL_DEPTH_TEST);
-				renderParticles(f);
-				glDisable(GL11.GL_DEPTH_TEST);
-//				
-				fbDeferred.bind();
-				fbDeferred.clearFrameBuffer();
-				shaderDeferred.enable();
-				GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
-				GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(1));
-				GL.bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(2));
-				GL.bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, Engine.getSceneFB().getDepthTex());
-				GL.bindTexture(GL_TEXTURE4, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SHADOW
-				GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty()); // LIGHTCOMPUTE
-				GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
-				GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SSAO
-				Engine.drawFullscreenQuad();
-				
-				
-		        VR.bindAndClearFramebuffer(i);
-		        
-				Shaders.tonemap.enable();
-				Shaders.tonemap.setProgramUniform1f("constexposure", 130);
-				GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
-//				glDisable(GL_BLEND);
-				if (renderMode >= 1) {
+			VR.setupCamera(i, f);
+	        VR.setViewPort(i);
+			
+			
+			Engine.getSceneFB().bind();
+			Engine.getSceneFB().clearFrameBuffer();
+			Engine.enableDepthMask(false);
+			glDisable(GL_BLEND);
+			skybox.enable();
+			Engine.drawFullscreenQuad();
+			Engine.enableDepthMask(true);
+			glEnable(GL11.GL_DEPTH_TEST);
+//			Shaders.colored3D.enable();
+//			tessState.drawQuads();
+//			
+			glEnable(GL11.GL_DEPTH_TEST);
+			renderParticles(f);
+			glDisable(GL11.GL_DEPTH_TEST);
+//			
+			fbDeferred.bind();
+			fbDeferred.clearFrameBuffer();
+			shaderDeferred.enable();
+			GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
+			GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(1));
+			GL.bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(2));
+			GL.bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, Engine.getSceneFB().getDepthTex());
+			GL.bindTexture(GL_TEXTURE4, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SHADOW
+			GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty()); // LIGHTCOMPUTE
+			GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
+			GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SSAO
+			Engine.drawFullscreenQuad();
+			
+			
+	        VR.bindAndClearFramebuffer(i);
+	        
+			Shaders.tonemap.enable();
+			Shaders.tonemap.setProgramUniform1f("constexposure", 130);
+			GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
+//			glDisable(GL_BLEND);
+			if (renderMode >= 1) {
 
-					Shaders.textured.enable();
-					GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(renderMode));	
-				}
-				Engine.drawFullscreenQuad();
+				Shaders.textured.enable();
+				GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(renderMode));	
 			}
+			Engine.drawFullscreenQuad();
+		
 		}
 		FrameBuffer.unbindFramebuffer();
 
