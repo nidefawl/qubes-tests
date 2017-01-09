@@ -1,14 +1,11 @@
 package test.game.vr;
 
-import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
 
-import java.io.*;
 import java.nio.*;
 
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
 import com.sun.jna.*;
@@ -17,18 +14,17 @@ import com.sun.jna.ptr.IntByReference;
 import jopenvr.*;
 import jopenvr.JOpenVRLibrary.EVRCompositorError;
 import jopenvr.TrackedDevicePose_t.ByReference;
-import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.gl.Engine;
 import nidefawl.qubes.gl.FrameBuffer;
 import nidefawl.qubes.shader.UniformBuffer;
 import nidefawl.qubes.util.GameError;
-import nidefawl.qubes.vec.*;
+import nidefawl.qubes.vec.Matrix4f;
+import nidefawl.qubes.vec.Vec3D;
 
 public class VR {
 
 	public static boolean DEBUG_PRINT = false;
-	public static boolean READ_MATS = false;
 	public static VR_IVRSystem_FnTable vrsystem;
 	public static class VRViewProjection {
 		public Matrix4f projLeft = new Matrix4f();
@@ -91,7 +87,6 @@ public class VR {
 	public static VR_IVROverlay_FnTable vrOverlay;
 	public static VR_IVRRenderModels_FnTable vrRenderModels;
 	public static VR_IVRSettings_FnTable vrSettings;
-	final static VRTextureBounds_t texBounds = new VRTextureBounds_t();
 	final static Texture_t texType0 = new Texture_t();
 	final static Texture_t texType1 = new Texture_t();
 
@@ -342,16 +337,6 @@ public class VR {
 //			}
 		}
 
-		// left eye
-		texBounds.uMax = 1f;
-		texBounds.uMin = 0f;
-		texBounds.vMax = 1f;
-		texBounds.vMin = 0f;
-		texBounds.setAutoSynch(false);
-		texBounds.setAutoRead(false);
-		texBounds.setAutoWrite(false);
-		texBounds.write();
-
 
 		// texture type
 		texType0.eColorSpace = JOpenVRLibrary.EColorSpace.EColorSpace_ColorSpace_Gamma;
@@ -408,51 +393,6 @@ public class VR {
 	
 	
 
-	static boolean hasRead=false;
-	public static void readMat4s(String string, Matrix4f m) {
-		File f = new File("nulldriver mats/"+string);
-		try {
-			FileInputStream fin = new FileInputStream(f);
-			int off = 0;
-			byte[] data = new byte[4];
-			int i = 0;
-			float[] f16 = new float[16];
-			while (true) {
-				int n = fin.read(data, off, data.length);
-				if (n == -1) {
-					break;
-				}
-				if (n != 4) {
-					throw new RuntimeException("unexpected file len "+f);
-				}
-				int nFloat = (data[3]&0xFF) << 24 | (data[2]&0xFF) << 16 | (data[1]&0xFF) << 8| (data[0]&0xFF) << 0;
-				float fl = Float.intBitsToFloat(nFloat);
-				if (i == 0) {
-					System.out.println(string+" "+fl);
-				}
-				int row = i/4;
-				int col = i%4;
-				f16[col*4+row] = fl;
-				i++;
-			}
-			m.load(f16);
-			fin.close();
-		} catch (IOException e) {
-			throw new RuntimeException("IOException "+f, e);
-		}
-	}
-	public static void readMats() {
-//		readMat4s("m_mat4ProjectionLeft", cam.projLeft);
-//		readMat4s("m_mat4ProjectionRight", cam.projRight);
-//		readMat4s("m_mat4eyePosLeft", cam.poseEyeLeft);
-//		readMat4s("m_mat4eyePosRight", cam.poseEyeRight);
-//		readMat4s("m_mat4HMDPose", hmdPose);
-		
-		
-		readMat4s("m_mat4ProjectionRight", cam.projLeft);
-		readMat4s("m_mat4eyePosRight", cam.poseEyeLeft);
-		readMat4s("m_mat4HMDPose", hmdPose);
-	}
 	public static void updatePose(float f)
 	{
 		if ( vrsystem == null || vrCompositor == null || vrCompositor.WaitGetPoses == null)
@@ -460,10 +400,6 @@ public class VR {
 
 		vrCompositor.WaitGetPoses.apply(hmdTrackedDevicePoseReference, JOpenVRLibrary.k_unMaxTrackedDeviceCount, null, 0);
 
-		if (READ_MATS && !hasRead) {
-			hasRead = true;
-			readMats();
-		}
 		for (int nDevice = 0; nDevice < JOpenVRLibrary.k_unMaxTrackedDeviceCount; ++nDevice )
 		{
 			hmdTrackedDevicePoses[nDevice].read();
