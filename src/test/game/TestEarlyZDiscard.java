@@ -22,10 +22,12 @@ import nidefawl.qubes.vec.Vec3D;
 
 public class TestEarlyZDiscard extends GameBase {
 	final CameraController cameraController = new CameraController();
-	
-	public static void main(String[] args) {
+
+	public TestEarlyZDiscard() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new TestEarlyZDiscard().startGame();
@@ -107,7 +109,7 @@ public class TestEarlyZDiscard extends GameBase {
 	}
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         	if (smaa != null) {

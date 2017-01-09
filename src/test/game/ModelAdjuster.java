@@ -45,13 +45,15 @@ public class ModelAdjuster extends GameBase {
 	private FrameBuffer sceneFB;
     boolean wasGrabbed = true;
     public static ModelAdjuster instance;
-	public static void main(String[] args) {
+    public ModelAdjuster() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
-        GameContext.setSideAndPath(Side.CLIENT, "../Game/");
-		GameContext.earlyInit();
 		Gui.FONT_SIZE_WINDOW_TITLE = 16;
 		Gui.FONT_SIZE_BUTTON = 14;
+	}
+	public static void main(String[] args) {
+        GameContext.setSideAndPath(Side.CLIENT, "../Game/");
+		GameContext.earlyInit();
 		instance = new ModelAdjuster();
 		instance.startGame();
 	}
@@ -175,7 +177,7 @@ public class ModelAdjuster extends GameBase {
 	
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();

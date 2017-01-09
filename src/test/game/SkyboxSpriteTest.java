@@ -35,9 +35,11 @@ public class SkyboxSpriteTest extends GameBase {
 	private FrameBuffer sceneFB;
     public FrameBuffer  fbDeferred;
     public FrameBuffer  fbSkybox;
-	public static void main(String[] args) {
+	public SkyboxSpriteTest() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new SkyboxSpriteTest().startGame();
@@ -261,21 +263,21 @@ public class SkyboxSpriteTest extends GameBase {
 		Engine.drawFullscreenQuad();
 
 
-		glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//		glEnable(GL_BLEND);
+//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         
-		Shaders.colored.enable();
-		Tess.instance.setColorF(0, 0.7f);
-		Tess.instance.add(400, 440);
-		Tess.instance.add(0, 440);
-		Tess.instance.add(0, 880);
-		Tess.instance.add(400, 880);
-		Tess.instance.drawQuads();
-		Shaders.textured.enable();
-		this.font.drawString(this.stats, 0, 180, 0, true, 1.0f);
-		if (this.error != null) {
-			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
-		}
+//		Shaders.colored.enable();
+//		Tess.instance.setColorF(0, 0.7f);
+//		Tess.instance.add(400, 440);
+//		Tess.instance.add(0, 440);
+//		Tess.instance.add(0, 880);
+//		Tess.instance.add(400, 880);
+//		Tess.instance.drawQuads();
+//		Shaders.textured.enable();
+//		this.font.drawString(this.stats, 0, 180, 0, true, 1.0f);
+//		if (this.error != null) {
+//			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
+//		}
 		
 		// Engine.checkGLError("drawAll");
 	}
@@ -301,7 +303,8 @@ public class SkyboxSpriteTest extends GameBase {
         spriteShader.enable();
 		float weatherStr = (WEATHER);
 		weatherStr = GameMath.powf(weatherStr*0.9f, 1.6f);
-        spriteShader.setProgramUniform1f("transparency", weatherStr);
+		spriteShader.setProgramUniform1f("spritebrightness", weatherStr);
+        spriteShader.setProgramUniform1f("transparency", 0.4f-weatherStr*0.1f);
 //      int nSprites = (int) GameMath.clamp(Math.round(this.totalSprites*(WEATHER*0.7f+0.3f)), 0, this.totalSprites);
         GL30.glBindVertexArray(vaoPos);
         for (int i = 0; i < this.texClouds.length; i++) {
@@ -316,6 +319,8 @@ public class SkyboxSpriteTest extends GameBase {
 
 
 	private Vec3D tmpPos = new Vec3D();
+	private float curWeather;
+	private float lastWeather;
 	@Override
 	public void preRenderUpdate(float f) {
 		this.cameraController.update(movement);
@@ -331,6 +336,7 @@ public class SkyboxSpriteTest extends GameBase {
         Engine.setLightPosition(Engine.getSunLightModel().getLightPosition());
         UniformBuffer.updateUBO(null, f);
         this.updateSprites(f);
+        this.curWeather = lastWeather + (WEATHER-lastWeather)*f;
 	}
 
 	@Override
@@ -341,7 +347,7 @@ public class SkyboxSpriteTest extends GameBase {
 	private VertexBuffer vertexBuf;
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();
@@ -379,6 +385,7 @@ public class SkyboxSpriteTest extends GameBase {
 			
 			System.out.println((ticksran/70%2==0) ? "direct" : "cubemap");
 		}
+		this.lastWeather = WEATHER;
 	}
 
 	@Override
@@ -434,14 +441,14 @@ public class SkyboxSpriteTest extends GameBase {
 		clouds.clear();
 		Random r = new Random(4444);
 		float l = 0.2f;
-		float hl = 0.3f;
-		float hu = 1.0f;
+		float hl = 1.2f;
+		float hu = 3.6f;
 		float motRange = 0.05f;
 		float rotRange = 0.0005f;
 		float minBr=0.25f;
 		float maxBr=1.0f;
-		float minSize = 22;
-		float maxSize = 88;
+		float minSize = 12;
+		float maxSize = 76;
 		float l2 = minSize*0.6f;
 		float h2 = minSize*0.3f;
 		for (int i = 0; i < 4; i++) {
@@ -545,7 +552,7 @@ public class SkyboxSpriteTest extends GameBase {
 			return this.sprites.size();
 		}
 		public void update(float f) {
-		    Vector3f.interp(this.pos, this.lastPos, f, this.renderPos);
+		    Vector3f.interp(this.lastPos, this.pos, f, this.renderPos);
 
 			for (PointSprite s : this.sprites) {
 				s.update(f);

@@ -289,9 +289,11 @@ public class TestNanoVG extends GameBase {
 			nvgText(vg, x + w - 3, y + 1, String.format("%.2f ms", avg * 1000.0f), NULL);
 		}
 	}
-	public static void main(String[] args) {
+	public TestNanoVG() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new TestNanoVG().startGame();
@@ -447,7 +449,7 @@ public class TestNanoVG extends GameBase {
 	}
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         	if (smaa != null) {

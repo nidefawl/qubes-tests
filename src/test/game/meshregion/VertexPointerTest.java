@@ -39,9 +39,14 @@ public class VertexPointerTest extends GameBase {
 	boolean hadContext = false;
     boolean once = false;
     Vector3f tmp = new Vector3f();
-    public Vector3f           skyColor        = new Vector3f(0.43F, .69F, 1.F);
-//  public Vector3f           fogColor        = new Vector3f(0.7F, 0.82F, 1F);
-  public Vector3f           fogColor        = new Vector3f(0.7F, 0.82F, 1F);
+	public Vector3f skyColor = new Vector3f(0.43F, .69F, 1.F);
+	// public Vector3f fogColor = new Vector3f(0.7F, 0.82F, 1F);
+	public Vector3f fogColor = new Vector3f(0.7F, 0.82F, 1F);
+
+	public VertexPointerTest() {
+		TICKS_PER_SEC = 20;
+		Engine.initRenderers = false;
+	}
 	public static void main(String[] args) {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
@@ -309,7 +314,7 @@ public class VertexPointerTest extends GameBase {
 	
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();

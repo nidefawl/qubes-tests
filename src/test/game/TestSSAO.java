@@ -25,6 +25,10 @@ public class TestSSAO extends GameBase {
 	private FrameBuffer buf;
 	private FrameBuffer sceneFB;
 	private TesselatorState tessState;
+	public TestSSAO() {
+		TICKS_PER_SEC = 20;
+		Engine.initRenderers = false;
+	}
 	public static void main(String[] args) {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
@@ -87,7 +91,7 @@ public class TestSSAO extends GameBase {
 	
 	boolean hadContext = false;
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
         	if (hadContext) {
                 Engine.checkGLError("pre GLNativeLib.deleteContext");

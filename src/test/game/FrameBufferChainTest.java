@@ -17,9 +17,11 @@ import nidefawl.qubes.util.*;
 
 public class FrameBufferChainTest extends GameBase {
 	SimpleResourceManager resMgr = new SimpleResourceManager();
-	public static void main(String[] args) {
+	public FrameBufferChainTest() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new FrameBufferChainTest().startGame();
@@ -129,7 +131,7 @@ public class FrameBufferChainTest extends GameBase {
 	}
 
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
             for (int i = 0; i < buffers.length; i++) {

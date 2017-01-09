@@ -50,9 +50,13 @@ public class ModelViewer extends GameBase {
     Gui gui = null;
     boolean wasGrabbed = true;
     public static ModelViewer instance;
-	public static void main(String[] args) {
+    public ModelViewer() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+		Gui.FONT_SIZE_WINDOW_TITLE = 16;
+		Gui.FONT_SIZE_BUTTON = 14;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		Gui.FONT_SIZE_WINDOW_TITLE = 16;
@@ -465,7 +469,7 @@ public class ModelViewer extends GameBase {
 	
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         	if (hadContext) {

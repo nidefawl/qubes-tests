@@ -34,9 +34,11 @@ public class Hex extends GameBase {
 	final CameraController cameraController = new CameraController();
 	private FrameBuffer sceneFB;
 	boolean ortho = true;
-	public static void main(String[] args) {
+	public Hex() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new Hex().startGame();
@@ -581,7 +583,7 @@ public class Hex extends GameBase {
 	private double zoom = 4;
 	private boolean diddrag;
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();

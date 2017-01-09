@@ -226,7 +226,7 @@ public class TestPointSprites extends GameBase {
 	private VertexBuffer vertexBuf;
 	
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();
@@ -363,7 +363,7 @@ public class TestPointSprites extends GameBase {
 			return this.sprites.size();
 		}
 		public void update(float f) {
-		    Vector3f.interp(this.pos, this.lastPos, f, this.renderPos);
+		    Vector3f.interp(this.lastPos, this.pos, f, this.renderPos);
 
 			for (PointSprite s : this.sprites) {
 				s.update(f);

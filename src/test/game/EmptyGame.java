@@ -1,9 +1,14 @@
 package test.game;
 
 import nidefawl.qubes.GameBase;
+import nidefawl.qubes.gl.Engine;
 import nidefawl.qubes.util.Stats;
 
 public class EmptyGame extends GameBase {
+	public EmptyGame() {
+		TICKS_PER_SEC = 20;
+		Engine.initRenderers = false;
+	}
 	public static void main(String[] args) {
 
 		new EmptyGame().startGame();
@@ -46,7 +51,7 @@ public class EmptyGame extends GameBase {
 	}
 
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
 		// TODO Auto-generated method stub
 
 	}

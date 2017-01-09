@@ -4,7 +4,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL30.*;
 
-import java.nio.FloatBuffer;
+import java.nio.*;
 import java.util.List;
 import java.util.Random;
 
@@ -16,25 +16,30 @@ import com.google.common.collect.Lists;
 import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
-import nidefawl.qubes.assets.AssetTexture;
+import nidefawl.qubes.async.AsyncTask;
+import nidefawl.qubes.async.AsyncTasks;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
+import nidefawl.qubes.gui.LoadingScreen;
+import nidefawl.qubes.models.*;
+import nidefawl.qubes.models.render.QModelBatchedRender;
 import nidefawl.qubes.render.BatchedRiggedModelRenderer;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
+import nidefawl.qubes.texture.array.*;
 import nidefawl.qubes.util.*;
-import nidefawl.qubes.vec.Vec3D;
-import nidefawl.qubes.vec.Vector3f;
+import nidefawl.qubes.vec.*;
 
-public class ParticleTest extends GameBase {
-    public final static int MAX_PARTICLES       = 1024*32;
+public class ParticleTextured extends GameBase {
+    public final static int MAX_PARTICLES       = 1024*16;
 	
     public final static ShaderBuffer        ssbo_particle_cubes        = new ShaderBuffer("ParticleCube_mat_model")
             .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_cubes_blockinfo = new ShaderBuffer("ParticleCube_blockinfo")
             .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES);
+    
 	static class Particle {
 		boolean dead = false;
 		int maxLive = 60;
@@ -44,9 +49,13 @@ public class ParticleTest extends GameBase {
 		Vector3f renderRot;
 		Vector3f rot, lastRot;
 		Vector3f rotspeed;
+		Vector2f texOffset;
 		float size, initSize, lastSize, renderSize;
-		public int texture;
 		int tick = 0;
+		private int tex;
+		private int normalMap;
+		private int type = 1;
+		private int pass;
 
 		public Particle() {
 			this.rotspeed = new Vector3f();
@@ -58,6 +67,14 @@ public class ParticleTest extends GameBase {
 			this.lastPos = new Vector3f();
 			this.mot = new Vector3f();
 			this.lastMot = new Vector3f();
+			this.texOffset = new Vector2f();
+		}
+		
+		public void setTex(int tex) {
+			this.tex = tex;
+		}
+		public void setType(int type) {
+			this.type = type;
 		}
 		
 		private void die() {
@@ -88,7 +105,7 @@ public class ParticleTest extends GameBase {
 		}
 
 
-		public int store(FloatBuffer bufMatFloat) {
+		public int store(int offset, FloatBuffer bufMatFloat, IntBuffer bufBlockInfo) {
 			BufferedMatrix mat = Engine.getTempMatrix();
 			mat.setIdentity();
 			mat.translate(this.renderPos);
@@ -97,8 +114,14 @@ public class ParticleTest extends GameBase {
 			mat.rotate(this.renderRot.z*GameMath.PI*2.0f, 0.0f, 0.0f, 1.0f);
 			mat.scale(this.renderSize);
 			mat.store(bufMatFloat);
+			int attr = this.tex | this.normalMap << 12 | this.type << 16 | this.pass << (16+12);
+			bufBlockInfo.put(attr);
+			bufBlockInfo.put(Float.floatToRawIntBits(this.initSize));
+			bufBlockInfo.put(Float.floatToRawIntBits(this.texOffset.x));
+			bufBlockInfo.put(Float.floatToRawIntBits(this.texOffset.y));
 			return 1;
 		}
+
 
 		public void tick() {
 			lastSize = size;
@@ -125,21 +148,24 @@ public class ParticleTest extends GameBase {
 			renderSize = lastSize + (size - lastSize) * f;
 
 		}
+
+		public void setTextureOffset(float u, float v) {
+			this.texOffset.set(u, v);
+		}
 	}
 	
-	final static int MAX_SPRITES = 1024*64;
 	static SimpleResourceManager newshaders = new SimpleResourceManager();
 	static SimpleResourceManager shaders = new SimpleResourceManager();
 	private static boolean startup;
     final static Vector3f tmp = new Vector3f();
-    public ParticleTest() {
+	public ParticleTextured() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new ParticleTest().startGame();
+		new ParticleTextured().startGame();
 	}
 
     private FontRenderer font;
@@ -152,10 +178,9 @@ public class ParticleTest extends GameBase {
 	private GLTriBuffer cubeFormat2;
 	Shader shaderDeferred;
 	Shader skybox;
-	Shader spriteShader;
+	Shader particleShaderSeperateBuffer;
 	
 	private TesselatorState tessState;
-	private int texNoise;
 
 	boolean once = false;
 	boolean hadContext = false;
@@ -176,17 +201,23 @@ public class ParticleTest extends GameBase {
 
     
 
-    private int maxSprites=4*1024;
+    private int maxSprites=16*1024;
 	List<Particle> particles = Lists.newArrayList();
 
 
 	Random r = new Random(4444);
 	private Vec3D tmpPos = new Vec3D();
+	private boolean init;
 
 
 	@Override
 	public void initGame() {
+		GameBase.loadingScreen = new LoadingScreen();
+		QModelBatchedRender.isModelViewer = true;
         Engine.init();
+		TextureManager.getInstance().init();
+        EntityModel.preInit();
+        EntityModel.postInit();
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
@@ -196,7 +227,13 @@ public class ParticleTest extends GameBase {
 	public void initShaders() {
         try {
             AssetManager assetMgr = AssetManager.getInstance();
-            Shader particle = assetMgr.loadShader(newshaders, "particle/cube");
+
+            Shader particleSeperateBuffer = assetMgr.loadShader(newshaders, "particle/cube", new IShaderDef() {
+                @Override
+                public String getDefinition(String define) {
+                    return null;
+                }
+            });
             Shader new_deferred = assetMgr.loadShader(newshaders, "post/deferred", new IShaderDef() {
                 @Override
                 public String getDefinition(String define) {
@@ -212,7 +249,7 @@ public class ParticleTest extends GameBase {
             shaders = newshaders;
             newshaders = tmp;
             shaderDeferred = new_deferred;
-            spriteShader = particle;
+            particleShaderSeperateBuffer = particleSeperateBuffer;
             this.skybox = skybox;
             this.shaderDeferred.enable();
             shaderDeferred.setProgramUniform1i("texColor", 0);
@@ -224,8 +261,10 @@ public class ParticleTest extends GameBase {
             shaderDeferred.setProgramUniform1i("texBlockLight", 6);
             shaderDeferred.setProgramUniform1i("texAO", 7);
 
-            spriteShader.enable();
-            spriteShader.setProgramUniform1i("tex0", 0);
+            particleShaderSeperateBuffer.enable();
+            particleShaderSeperateBuffer.setProgramUniform1i("blockTextures", 0);
+            particleShaderSeperateBuffer.setProgramUniform1i("noisetex", 1);
+            particleShaderSeperateBuffer.setProgramUniform1i("normalTextures", 2);
             Shader.disable();
             this.error = null;
         } catch (ShaderCompileError e) {
@@ -242,15 +281,63 @@ public class ParticleTest extends GameBase {
     }
 	@Override
 	public void lateInitGame() {
-		
+
+        loadingScreen.render(0, 0.8f, "Loading... Item Models");
+        ItemModelManager.getInstance().reload();
+        loadingScreen.render(0, 0.9f, "Loading... Block Models");
+        BlockModelManager.getInstance().reload();
+        loadingScreen.render(0, 1f, "Loading... Entity Models");
+        EntityModelManager.getInstance().reload();
+        loadingScreen.render(0, 1f, "Loading... Item Textures");
+        TextureArray[] arrays = {
+                ItemTextureArray.getInstance(),
+                BlockNormalMapArray.getInstance(),
+                BlockTextureArray.getInstance(),
+        };
+        for (int i = 0; i < arrays.length; i++) {
+            final TextureArray arr = arrays[i];
+            AsyncTasks.submit(new AsyncTask() {
+                @Override
+                public void pre() {
+                    try {
+                        arr.preUpdate();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                @Override
+                public void post() {
+                    arr.postUpdate();
+                }
+                @Override
+                public Void call() throws Exception {
+                    try {
+                        arr.load();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                }
+                @Override
+                public TaskType getType() {
+                    return TaskType.LOAD_TEXTURES;
+                }
+            });
+        }
+        while(!AsyncTasks.completeTasks()) {
+            float pr = 0;
+            for (int i = 0; i < arrays.length; i++) {
+                pr+=arrays[i].getProgress();
+            }
+            pr/=(float)arrays.length;
+            loadingScreen.render(1, pr, "Loading...");
+        }
 		
 		this.font=FontRenderer.get(0, 22, 0);
 		cubeFormat1 = new GLTriBuffer(GL15.GL_STREAM_DRAW);
 		cubeFormat2 = new GLTriBuffer(GL15.GL_STREAM_DRAW);
 		redraw();
 		
-		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/blocks/ground/sand.png");
-		this.texNoise = TextureManager.getInstance().makeNewTexture(t, true, true, 0);
 
 		initShaders();
 
@@ -293,6 +380,7 @@ public class ParticleTest extends GameBase {
 		Tess.instance.add(4*w, 0, d*4);
 		Tess.instance.add(4*w, 0, -d*4);
 		Tess.instance.draw(GL_QUADS, this.tessState);
+		init = true;
 	}
 	@Override
 	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
@@ -314,7 +402,7 @@ public class ParticleTest extends GameBase {
 			case GLFW.GLFW_KEY_5:
 				selFormat ^= 1;
 				break;
-			case GLFW.GLFW_KEY_6:
+			case GLFW.GLFW_KEY_7:
 				initShaders();
 				break;
 			case GLFW.GLFW_KEY_KP_ADD:
@@ -406,7 +494,7 @@ public class ParticleTest extends GameBase {
 		tick--;
 		if (tick <= 0) {
 //			initShaders();
-			tick = 4;
+			tick = 2;
 			try {
 				once = false;
 			} catch (Exception e) {
@@ -534,18 +622,18 @@ public class ParticleTest extends GameBase {
 	}
 	private void renderParticles(float f) {
 		glDisable(GL_BLEND);
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texNoise);
 
 
 		glEnable(GL_BLEND);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        spriteShader.enable();
+    	particleShaderSeperateBuffer.enable();
 //      int nSprites = (int) GameMath.clamp(Math.round(this.totalSprites*(WEATHER*0.7f+0.3f)), 0, this.totalSprites);
         
 		storeParticles(f, 0);
 		Engine.checkGLError("storeparticles");
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texNoise);
+        GL.bindTexture(GL_TEXTURE0, GL30.GL_TEXTURE_2D_ARRAY, TMgr.getBlocks());
+
 		Engine.checkGLError("bind texture");
 		GLVAO vao = selFormat == 0 ? GLVAO.vaoStaticModel : GLVAO.vaoModel;
 		GLTriBuffer buffer = selFormat == 0 ? cubeFormat1 : cubeFormat2;
@@ -561,6 +649,8 @@ public class ParticleTest extends GameBase {
 	}
 
 	public void spawnParticles(int n) {
+		if (particles.size()>=MAX_PARTICLES)
+			return;
 		float maxVelXZ = 1.3f;
 		float minVelY = 0.3f;
 		float maxVelY = 3.3f;
@@ -574,41 +664,59 @@ public class ParticleTest extends GameBase {
 			float my = (float) (minVelY+(maxVelY-minVelY)*r.nextFloat()*r.nextFloat());
 			p.setMotion(mx, my, mz);
 			p.setPos(55, -32, 0);
-			p.setSize(1+r.nextFloat()*2);
+			int size = r.nextInt(4);
+			p.setSize(1F/4f+size/4F);
+			int toffx = r.nextInt(8);
+			int toffz = r.nextInt(8);
+			
+			p.setTextureOffset(toffx/8F, toffz/8F);
 			p.setRot(r.nextFloat(), r.nextFloat(), r.nextFloat());
 			p.setRotSpeed(r.nextFloat()*rotRange, r.nextFloat()*rotRange, r.nextFloat()*rotRange);
+			p.setTex(r.nextInt(BlockTextureArray.getInstance().totalSlots));
 			particles.add(p);
 		}
 	}
 	
 	void storeParticles(float ftime, int n) {
+		IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
 		FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
         bufModelMat.clear();
+        bufBlockInfo.clear();
 		storedSprites = 0;
+		int offset=0;
 		for (int i = 0; i < particles.size(); i++) {
-			Particle cloud = particles.get(i);
-			if (cloud.texture == n) {
-				storedSprites+=cloud.store(bufModelMat);
+			if (i >= MAX_PARTICLES) {
+				System.err.println("too many particles");
+				break;
 			}
+			Particle cloud = particles.get(i);
+			storedSprites+=cloud.store(offset, bufModelMat, bufBlockInfo);
+			offset++;
 		}
-
-		bufModelMat.flip();
+        bufModelMat.flip();
+        bufBlockInfo.flip();
         ssbo_particle_cubes.update();
+        ssbo_particle_cubes_blockinfo.update();
 		
 	}
 
 	@Override
 	public void tick() {
-		this.cameraController.tickUpdate();
-		if (!pause) {
-			this.updateTickParticles();
-			for (int a = 0; a < Math.max(1, Math.min(130, maxSprites/100)); a++)
-			if (r.nextInt(120)>1&&r.nextInt(maxSprites)>storedSprites) {
-				spawnParticles(1+r.nextInt(23));
+		if (init) {
+			this.cameraController.tickUpdate();
+			if (!pause) {
+				this.updateTickParticles();
+//				if (this.particles.isEmpty()) {
+//					spawnParticles(1);
+//				}
+				for (int a = 0; a < Math.max(1, Math.min(130, maxSprites/100)); a++)
+				if (r.nextInt(120)>1&&r.nextInt(maxSprites)>storedSprites) {
+					spawnParticles(1+r.nextInt(23));
+				}
+			} else if (fireUpdate>0) {
+				fireUpdate=0;
+	            this.preRenderUpdateParticles(pauseTime);
 			}
-		} else if (fireUpdate>0) {
-			fireUpdate=0;
-            this.preRenderUpdateParticles(pauseTime);
 		}
 	}
 

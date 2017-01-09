@@ -18,11 +18,11 @@ public class CameraController {
 	public Vec3D lastMot = new Vec3D();
 	public float yaw, lastYaw;
 	public float pitch, lastPitch;
-	private float   forward;
-    private float   strafe;
-    private float   maxSpeed = 0.82F;
-    private float   jump;
-    private boolean   sneak;
+	protected float   forward;
+	protected float   strafe;
+	protected float   maxSpeed = 0.82F;
+	protected float   jump;
+	protected boolean   sneak;
 
 	/**
 	 * @param movement 

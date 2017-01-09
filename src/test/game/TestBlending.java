@@ -17,9 +17,11 @@ import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 
 public class TestBlending extends GameBase {
-	public static void main(String[] args) {
+	public TestBlending() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
+	}
+	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new TestBlending().startGame();
@@ -67,7 +69,7 @@ public class TestBlending extends GameBase {
 	}
 
 	@Override
-	public void onResize(int displayWidth, int displayHeight) {
+	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         }

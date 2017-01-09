@@ -1,51 +1,53 @@
-package test.game;
+package test.game.vr;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.*;
 
+import java.nio.IntBuffer;
+
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
 
-import nidefawl.qubes.Game;
+import jopenvr.JOpenVRLibrary;
+import jopenvr.JOpenVRLibrary.EVRCompositorError;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
-import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.input.KeybindManager;
-import nidefawl.qubes.render.region.MeshedRegion;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
-import nidefawl.qubes.vec.Vec3D;
-import nidefawl.qubes.vec.Vector3f;
+import nidefawl.qubes.vec.*;
+import test.game.CameraController;
 
-public class FrustumTest extends GameBase {
-	final CameraController cameraController = new CameraController();
-	private FrameBuffer sceneFB;
-	public FrustumTest() {
+public class VRApp extends GameBase {
+	public VRApp() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new FrustumTest().startGame();
+		new VRApp().startGame();
 	}
-	
-
-	int tick = 0;
+	public enum InputSource {
+		MOUSE, HEADTRACKING
+	};
+	InputSource selInputSource = InputSource.HEADTRACKING;
     static SimpleResourceManager shaders = new SimpleResourceManager();
     static SimpleResourceManager newshaders = new SimpleResourceManager();
-	private static boolean startup;
+	final CameraController cameraController = new CameraController();
+	private FrameBuffer sceneFB;
 
-
-
+	private GLTriBuffer cube;
 	Shader modelShader;
-
+	
+	int tick = 0;
+	private static boolean startup;
+	
     public void initShaders() {
         try {
             AssetManager assetMgr = AssetManager.getInstance();
@@ -73,11 +75,12 @@ public class FrustumTest extends GameBase {
 //		System.out.println(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")");
 		tick--;
 		if (tick <= 0) {
-			initShaders();
-			Shaders.initShaders();
+			setTitle(lastFPS+"");
+//			initShaders();
+//			Shaders.initShaders();
 			tick = 5;
 
-	        redraw();
+//	        redraw();
 			try {
 				once = false;
 			} catch (Exception e) {
@@ -97,8 +100,10 @@ public class FrustumTest extends GameBase {
 
     boolean once = false;
     Vector3f tmp = new Vector3f();
-	@Override
-	public void render(float f) {
+    void renderScene(float f) {
+    	Vector3f v1 = new Vector3f(0, 0, 0);
+    	Matrix4f.transform(Engine.getMatSceneMVP(), v1, v1);
+//    	System.out.println( mvp);
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
 		Shaders.colored3D.enable();
@@ -111,16 +116,17 @@ public class FrustumTest extends GameBase {
 		glDisable(GL_BLEND);
 		int k = 4;
 		int r = 10;
-        Engine.bindVAO(GLVAO.vaoModel);
-        Engine.bindBuffer(this.buf.getVbo());
-        Engine.bindIndexBuffer(this.buf.getVboIndices());
+        Engine.bindVAO(GLVAO.vaoStaticModel);
+        Engine.bindBuffer(cube.getVbo());
+        Engine.bindIndexBuffer(cube.getVboIndices());
 		for (int i = -k; i <= k; i++) {
 			for (int j = -k; j <= k; j++) {
 				tmp.set(i*r, 0, j*r);
 				int nn = Engine.camFrustum.sphereInFrustum(tmp, 2);
 				if (nn > -1) {
+//					System.out.println("in "+nn);
 					Engine.pxStack.setTranslation(i*r, 0, j*r);	
-			        this.buf.drawElements();
+			        this.cube.drawElements();
 				} else{
 //					System.out.println("out "+nn);
 				}
@@ -129,29 +135,34 @@ public class FrustumTest extends GameBase {
 			}
 		}
 		Engine.pxStack.pop();
-		
 		FrameBuffer.unbindFramebuffer();
-        GLDebugTextures.readTexture("Pass0", "texColor", Engine.getSceneFB().getTexture(0));
         Engine.checkGLError("Pass0");
-        glClearColor(0,0,0,0);
-        glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        Shaders.tonemap.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
-        Engine.drawFullscreenQuad();
-        GLDebugTextures.drawAll(displayWidth, displayHeight);
+    }
+	@Override
+	public void render(float f) {
+
+		for (int i = 0; i < 3; i++) {
+			VR.setupCamera(i, f);
+			renderScene(f);
+	        Shaders.tonemap.enable();
+	        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
+	        VR.bindAndClearFramebuffer(i);
+	        Engine.drawFullscreenQuad();
+		}
+		FrameBuffer.unbindFramebuffer();
         Engine.checkGLError("drawAll");
+		VR.Submit();
 	}
 
 	private Vec3D tmpPos = new Vec3D();
 	@Override
 	public void preRenderUpdate(float f) {
+		VR.updatePose(f);
 		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-        Engine.updateCamera();
+		Vec3D.interp(this.cameraController.lastPos, this.cameraController.pos, f, this.tmpPos);
+		Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);
+		Engine.camera.setPosition(this.tmpPos);
+		Engine.updateCamera();
         UniformBuffer.updateUBO(null, f);
 	}
 
@@ -160,8 +171,6 @@ public class FrustumTest extends GameBase {
 	}
 	
 	boolean hadContext = false;
-	private VertexBuffer vertexBuf;
-	private GLTriBuffer buf;
 	
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
@@ -201,20 +210,20 @@ public class FrustumTest extends GameBase {
 	}
 	public void redraw() {
 
-		this.vertexBuf.reset();
-		RenderUtil.makeSphere(this.vertexBuf, 2, 16, 16);
-		System.out.println(vertexBuf.getVertexCount()+"/"+vertexBuf.getTriIdxPos());
-		buf.upload(this.vertexBuf);
+		VertexBuffer buf = new VertexBuffer(1024*1024);
+        RenderUtil.makeCube(buf, 1.0f, GLVAO.vaoStaticModel);
+        int data = cube.upload(buf);
+        System.out.println("uploaded "+(data*4)+" bytes for format 1");
 	}
 
 	@Override
 	public void lateInitGame() {
-		this.vertexBuf = new VertexBuffer(1024*1024);
-		this.buf = new GLTriBuffer(GL15.GL_STATIC_DRAW);
+		cube = new GLTriBuffer(GL15.GL_STREAM_DRAW);
 		
 
 		redraw();
 		initShaders();
+		VR.initApp(this);
 	}
 
 	@Override
