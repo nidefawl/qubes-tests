@@ -407,6 +407,7 @@ public class SkyboxSpriteTest extends GameBase {
 			}
 		}
 		this.bufMatFloat.flip();
+		this.bufMat.limit(this.bufMatFloat.limit()*4);
 		this.vboAttr.upload(GL15.GL_ARRAY_BUFFER, this.bufMat, this.bufMatFloat.limit()*4);
 //		System.out.println("totalSprites "+totalSprites);
 		
@@ -649,6 +650,7 @@ public class SkyboxSpriteTest extends GameBase {
         idxBuf.put(3);
         idxBuf.put(0);
         idxBuf.flip();
+        buf.limit(idxBuf.limit()*4);
         this.vboIdx.upload(GL15.GL_ELEMENT_ARRAY_BUFFER, buf, idxBuf.limit()*4);
         Memory.free(buf);
 		this.vertexBuf.reset();
