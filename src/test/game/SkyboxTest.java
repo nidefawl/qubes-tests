@@ -255,7 +255,7 @@ private String error;
 		Tess.instance.add(400, 880);
 		Tess.instance.drawQuads();
 		Shaders.textured.enable();
-		this.font.drawString(this.stats, 0, 180, 0, true, 1.0f);
+		this.font.drawString(this.stats, 0, 470, -1, true, 1.0f);
 		if (this.error != null) {
 			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
 		}

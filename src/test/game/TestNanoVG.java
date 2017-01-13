@@ -195,7 +195,7 @@ public class TestNanoVG extends GameBase {
 
 	static void initGraph(PerfGraph fps, int style, String name) {
 		fps.style = style;
-		fps.name = memEncodeUTF8(name);
+		fps.name = memUTF8(name);
 		Arrays.fill(fps.values, 0);
 		fps.head = 0;
 	}
@@ -264,29 +264,29 @@ public class TestNanoVG extends GameBase {
 			nvgFontSize(vg, 14.0f);
 			nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 			nvgFillColor(vg, rgba(240, 240, 240, 192, colorA));
-			nvgText(vg, x + 3, y + 1, fps.name, NULL);
+			nvgText(vg, x + 3, y + 1, fps.name);
 		}
 
 		if ( fps.style == GRAPH_RENDER_FPS ) {
 			nvgFontSize(vg, 18.0f);
 			nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
 			nvgFillColor(vg, rgba(240, 240, 240, 255, colorA));
-			nvgText(vg, x + w - 3, y + 1, String.format("%.2f FPS", 1.0f / avg), NULL);
+			nvgText(vg, x + w - 3, y + 1, String.format("%.2f FPS", 1.0f / avg));
 
 			nvgFontSize(vg, 15.0f);
 			nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_BOTTOM);
 			nvgFillColor(vg, rgba(240, 240, 240, 160, colorA));
-			nvgText(vg, x + w - 3, y + h - 1, String.format("%.2f ms", avg * 1000.0f), NULL);
+			nvgText(vg, x + w - 3, y + h - 1, String.format("%.2f ms", avg * 1000.0f));
 		} else if ( fps.style == GRAPH_RENDER_PERCENT ) {
 			nvgFontSize(vg, 18.0f);
 			nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
 			nvgFillColor(vg, rgba(240, 240, 240, 255, colorA));
-			nvgText(vg, x + w - 3, y + 1, String.format("%.1f %%", avg * 1.0f), NULL);
+			nvgText(vg, x + w - 3, y + 1, String.format("%.1f %%", avg * 1.0f));
 		} else {
 			nvgFontSize(vg, 18.0f);
 			nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
 			nvgFillColor(vg, rgba(240, 240, 240, 255, colorA));
-			nvgText(vg, x + w - 3, y + 1, String.format("%.2f ms", avg * 1000.0f), NULL);
+			nvgText(vg, x + w - 3, y + 1, String.format("%.2f ms", avg * 1000.0f));
 		}
 	}
 	public TestNanoVG() {
@@ -364,13 +364,13 @@ public class TestNanoVG extends GameBase {
 //
 //			nvgFontSize(vg, 22.0f);
 //			nvgFontFace(vg, "sans-bold");
-//			float tw = nvgTextBounds(vg, 0, 0, textEncoded, NULL, (ByteBuffer)null);
+//			float tw = nvgTextBounds(vg, 0, 0, textEncoded, (ByteBuffer)null);
 //
 //			nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 //			nvgFillColor(vg, rgba(0, 0, 0, 160, colorA));
-//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f+2, 32+2, textEncoded, NULL);
+//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f+2, 32+2, textEncoded);
 //			nvgFillColor(vg, rgba(255, 255, 255, 255, colorA));
-//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f, 32, textEncoded, NULL);
+//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f, 32, textEncoded);
 //			memFree(textEncoded);
 //		}
 //		{
@@ -383,9 +383,9 @@ public class TestNanoVG extends GameBase {
 //
 //			nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BOTTOM);
 //			nvgFillColor(vg, rgba(0, 0, 0, 160, colorA));
-//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f+2, 64+2, textEncoded, NULL);
+//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f+2, 64+2, textEncoded);
 //			nvgFillColor(vg, rgba(255, 255, 255, 255, colorA));
-//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f, 64, textEncoded, NULL);
+//			nvgText(vg, ((float)Game.displayWidth-tw)/2.0f, 64, textEncoded);
 //			memFree(textEncoded);
 //		}
 //		nvgEnd();
@@ -532,7 +532,7 @@ public class TestNanoVG extends GameBase {
 		glEnable(GL_BLEND);
 		initGraph(fps, GRAPH_RENDER_FPS, "Frame Time");
 
-		vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+		vg = nvgCreate(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 
 		if ( vg == NULL ) {
 			throw new RuntimeException("Could not init nanovg.");

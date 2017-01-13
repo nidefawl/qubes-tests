@@ -208,7 +208,7 @@ public class SkyboxSpriteTest extends GameBase {
 	public void render(float f) {
 		
 		Engine.enableDepthMask(false);
-		if (ticksran/70%2!=0) {
+		if (renderIntoCubemap) {
 			glDisable(GL11.GL_DEPTH_TEST);
 			UniformBuffer.uboMatrix3D_Temp.bind();
 			this.fbSkybox.bind();
@@ -219,7 +219,6 @@ public class SkyboxSpriteTest extends GameBase {
 		        renderSky(f);
 			}
 			Engine.setDefaultViewport();
-			glDisable(GL_BLEND);
 			
 			UniformBuffer.uboMatrix3D.bind();
 			
@@ -229,14 +228,14 @@ public class SkyboxSpriteTest extends GameBase {
 		
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
-		if (ticksran/70%2!=0) {
+		if (renderIntoCubemap) {
 			skybox.enable();
 	        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_CUBE_MAP, this.fbSkybox.getTexture(0));
 			Engine.drawFullscreenQuad();
 		}
 		
 		glDisable(GL11.GL_DEPTH_TEST);
-		if (ticksran/70%2==0) {
+		if (!renderIntoCubemap) {
 			renderSky(f);
 		}
 		
@@ -254,7 +253,6 @@ public class SkyboxSpriteTest extends GameBase {
 		GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SSAO
 		Engine.drawFullscreenQuad();
 		FrameBuffer.unbindFramebuffer();
-
 		glClearColor(0, 0, 0, 0);
 		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 		Shaders.tonemap.enable();
@@ -262,24 +260,6 @@ public class SkyboxSpriteTest extends GameBase {
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
 		Engine.drawFullscreenQuad();
 
-
-//		glEnable(GL_BLEND);
-//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        
-//		Shaders.colored.enable();
-//		Tess.instance.setColorF(0, 0.7f);
-//		Tess.instance.add(400, 440);
-//		Tess.instance.add(0, 440);
-//		Tess.instance.add(0, 880);
-//		Tess.instance.add(400, 880);
-//		Tess.instance.drawQuads();
-//		Shaders.textured.enable();
-//		this.font.drawString(this.stats, 0, 180, 0, true, 1.0f);
-//		if (this.error != null) {
-//			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
-//		}
-		
-		// Engine.checkGLError("drawAll");
 	}
 
 	private void renderSky(float f) {
@@ -315,12 +295,14 @@ public class SkyboxSpriteTest extends GameBase {
         }
         GL30.glBindVertexArray(0);
         Engine.bindVAO(null);
+		glDisable(GL_BLEND);
 	}
 
 
 	private Vec3D tmpPos = new Vec3D();
 	private float curWeather;
 	private float lastWeather;
+	boolean renderIntoCubemap = false;
 	@Override
 	public void preRenderUpdate(float f) {
 		this.cameraController.update(movement);
@@ -382,8 +364,8 @@ public class SkyboxSpriteTest extends GameBase {
 		this.cameraController.tickUpdate();
 		this.updateSpritesTick();
 		if (((ticksran-1)/70%2==0) != (ticksran/70%2==0)) {
-			
-			System.out.println((ticksran/70%2==0) ? "direct" : "cubemap");
+			renderIntoCubemap = !renderIntoCubemap;
+			System.out.println((!renderIntoCubemap) ? "direct" : "cubemap");
 		}
 		this.lastWeather = WEATHER;
 	}

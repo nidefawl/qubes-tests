@@ -22,6 +22,7 @@ import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.LoadingScreen;
+import nidefawl.qubes.input.KeybindManager;
 import nidefawl.qubes.models.*;
 import nidefawl.qubes.models.render.QModelBatchedRender;
 import nidefawl.qubes.render.BatchedRiggedModelRenderer;
@@ -31,7 +32,7 @@ import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.texture.array.*;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;
-import test.game.vr.VR;
+import nidefawl.qubes.vr.VR;
 
 public class ParticlePerformanceTest extends GameBase {
     public final static int MAX_PARTICLES       = 1024*16;
@@ -212,7 +213,7 @@ public class ParticlePerformanceTest extends GameBase {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
 		Engine.znear = 0.1f;
-		Engine.zfar = 1024.0f;
+		Engine.zfar = 512.0f;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -262,9 +263,8 @@ public class ParticlePerformanceTest extends GameBase {
 
 	Random r = new Random(4444);
 	private Vec3D tmpPos = new Vec3D();
-	private boolean init;
 
-	private static float SPEED= 1.0f;
+	private static float SPEED= 0.2f;
 
 
 	@Override
@@ -386,7 +386,6 @@ public class ParticlePerformanceTest extends GameBase {
     }
 	@Override
 	public void lateInitGame() {
-
         loadingScreen.render(0, 0.8f, "Loading... Item Models");
         ItemModelManager.getInstance().reload();
         loadingScreen.render(0, 0.9f, "Loading... Block Models");
@@ -485,13 +484,15 @@ public class ParticlePerformanceTest extends GameBase {
 		Tess.instance.add(4*w, 0, d*4);
 		Tess.instance.add(4*w, 0, -d*4);
 		Tess.instance.draw(GL_QUADS, this.tessState);
-		init = true;
-		VR.initApp(this);
+        VR.initApp(this);
 	}
 	@Override
 	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
 		if (action == GLFW.GLFW_PRESS) {
 			switch (key) {
+			case GLFW.GLFW_KEY_F1:
+				toggleVR();
+				break;
 			case GLFW.GLFW_KEY_1:
 				initShaders();
 				break;
@@ -581,9 +582,11 @@ public class ParticlePerformanceTest extends GameBase {
 	}
 	@Override
 	public void onWindowResize(int displayWidth, int displayHeight) {
-		if (!init) {
-            Engine.resize(displayWidth, displayHeight);
-		}
+        if (!VR_SUPPORT||isStarting) {
+            Game.displayWidth=displayWidth;
+            Game.displayHeight=displayHeight;
+            setRenderResolution(displayWidth, displayHeight);
+        }
 	}
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
@@ -614,12 +617,23 @@ public class ParticlePerformanceTest extends GameBase {
 	}
 	@Override
 	public void onStatsUpdated() {
-		if (VR.getFB(0) != null)
-		setTitle(String.format("%d FPS - %dx%d - %dx%d - %dx%d", lastFPS, displayWidth, displayHeight, VR.renderWidth, VR.renderHeight, VR.getFB(0).getWidth(), VR.getFB(0).getHeight()));
 		this.stats = String.format("%d FPS (%.2fms)", lastFPS, Stats.avgFrameTime);
+
+		if (VR.getFB(0) != null) {
+
+            String s = String.format("%s - Display %dx%d - Window %dx%d - SceneFB %dx%d - VRFB %dx%d - Gui %dx%d", 
+            		this.stats, 
+            		displayWidth, displayHeight, 
+            		windowWidth, windowHeight, 
+            		Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 
+            		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
+            		guiWidth, guiHeight);
+            setTitle(s);
+		}
 		tick--;
 		if (tick <= 0) {
 //			initShaders();
+//			Shaders.initShaders();
 			tick = 2;
 			try {
 				once = false;
@@ -642,14 +656,16 @@ public class ParticlePerformanceTest extends GameBase {
 
 	@Override
 	public void preRenderUpdate(float f) {
-		VR.updatePose(f);
+		if (VR_SUPPORT) {
+			VR.updatePose(f);
+		}
 		this.cameraController.update(movement);
 		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
 		this.tmpPos.scale(f);
 		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
         Engine.camera.setPosition(this.tmpPos);
         Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-//        Engine.updateCamera();
+        Engine.updateCamera();
         Engine.getSunLightModel().setTime(5850);
 //        Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
         Engine.getSunLightModel().updateFrame(f);
@@ -680,29 +696,35 @@ public class ParticlePerformanceTest extends GameBase {
         System.out.println("uploaded "+(data2*4)+" bytes for format 2");
 	}
 	@Override
-	public void render(float f) {
-
-
-		for (int i = 0; i < 3; i++) {
-			VR.setupCamera(i, f);
-	        VR.setViewPort(i);
+	public void render(float fTime) {
+        glDisable(GL_BLEND);
+        
+        glClearColor(0.71F, 0.82F, 1.00F, 1F);
+        glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+        Engine.setDefaultViewport();
+        for (int eye = 0; eye < (VR_SUPPORT ? 2 : 1); eye++) {
+            if (VR_SUPPORT) {
+                Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
+                Engine.getMatSceneP().update();
+                
+                Engine.updateCamera(VR.getViewMat(eye), Engine.camera.getPosition());
+                UniformBuffer.updateUBO(null, fTime);
+                
+                VR.setViewPort(eye);
+                Engine.checkGLError("setCameraAndViewport");
+            }
 			
 			
 			Engine.getSceneFB().bind();
 			Engine.getSceneFB().clearFrameBuffer();
 			Engine.enableDepthMask(false);
-			glDisable(GL_BLEND);
 			skybox.enable();
 			Engine.drawFullscreenQuad();
 			Engine.enableDepthMask(true);
 			glEnable(GL11.GL_DEPTH_TEST);
-//			Shaders.colored3D.enable();
-//			tessState.drawQuads();
-//			
-			glEnable(GL11.GL_DEPTH_TEST);
-			renderParticles(f);
+			renderParticles(fTime);
 			glDisable(GL11.GL_DEPTH_TEST);
-//			
+			
 			fbDeferred.bind();
 			fbDeferred.clearFrameBuffer();
 			shaderDeferred.enable();
@@ -715,53 +737,49 @@ public class ParticlePerformanceTest extends GameBase {
 			GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
 			GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SSAO
 			Engine.drawFullscreenQuad();
-			
-			
-	        VR.bindAndClearFramebuffer(i);
+
+            FrameBuffer finalTarget = VR_SUPPORT ? VR.getFB(eye) : null;
+            if (finalTarget == null) FrameBuffer.unbindFramebuffer();
+            else {
+                finalTarget.bind();
+                finalTarget.clearFrameBuffer();
+            }
 	        
 			Shaders.tonemap.enable();
 			Shaders.tonemap.setProgramUniform1f("constexposure", 130);
 			GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
-//			glDisable(GL_BLEND);
+			
 			if (renderMode >= 1) {
 
 				Shaders.textured.enable();
 				GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(renderMode));	
 			}
 			Engine.drawFullscreenQuad();
+//            System.out.println("eye "+eye+" GL11.glGetBoolean(GL11.GL_CULL_FACE) "+GL11.glGetBoolean(GL11.GL_CULL_FACE));
+//            System.out.println("eye "+eye+"GL11.glGetBoolean(GL11.GL_DEPTH_TEST) "+GL11.glGetBoolean(GL11.GL_DEPTH_TEST));
+
+			glEnable(GL11.GL_DEPTH_TEST);
+			glDisable(GL11.GL_CULL_FACE);
+            Engine.updateCamera(VR.getViewMat(eye), Vector3f.ZERO);
+            UniformBuffer.updateUBO(null, fTime);
+			VR.renderControllers();
+			glEnable(GL11.GL_CULL_FACE);
+			glDisable(GL11.GL_DEPTH_TEST);
 		
 		}
-		FrameBuffer.unbindFramebuffer();
 
 
-		VR.Submit();
-		Engine.setViewport(0, 0, windowWidth, windowHeight);
+        if (VR_SUPPORT) {
+
+            FrameBuffer.unbindFramebuffer();
+            VR.Submit();
+            Engine.checkGLError("VR.Submit");
+            setGUIProjection();
+            Engine.checkGLError("setGUIProjection");
+            VR.drawFullscreenCompanion(guiWidth, guiHeight);
+            Engine.checkGLError("drawFullscreenCompanion");
+        }
 		glClear(GL_DEPTH_BUFFER_BIT);
-
-		
-		float scaleR = 0.2f;
-		float scaleW = VR.getFB(0).getWidth()*scaleR;
-		float scaleH = VR.getFB(0).getHeight()*scaleR;
-
-		Shaders.textured.enable();
-		glActiveTexture(GL_TEXTURE0);
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, VR.getFB(0).getTexture(0));
-		Tess.instance.setColorF(-1, 1f);
-		Tess.instance.add(scaleW, 0, 0, 1, 1);
-		Tess.instance.add(0, 0, 0, 0, 1);
-		Tess.instance.add(0, scaleH, 0, 0, 0);
-		Tess.instance.add(scaleW, scaleH, 0, 1, 0);
-		Tess.instance.drawQuads();
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, VR.getFB(1).getTexture(0));
-		Tess.instance.setOffset(scaleW, 0, 0);
-		Tess.instance.setColorF(-1, 1f);
-		Tess.instance.add(scaleW, 0, 0, 1, 1);
-		Tess.instance.add(0, 0, 0, 0, 1);
-		Tess.instance.add(0, scaleH, 0, 0, 0);
-		Tess.instance.add(scaleW, scaleH, 0, 1, 0);
-		Tess.instance.drawQuads();
-		Tess.instance.setOffset(0, 0, 0);
-
 		glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int yT = 400;
@@ -782,7 +800,11 @@ public class ParticlePerformanceTest extends GameBase {
 		if (this.error != null) {
 			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
 		}
+		glDisable(GL_BLEND);
 		// Engine.checkGLError("drawAll");
+        if (VR_SUPPORT) {
+        	setVRProjection();
+        }
 	}
 	private void renderParticles(float f) {
 		glDisable(GL_BLEND);
@@ -836,7 +858,7 @@ public class ParticlePerformanceTest extends GameBase {
 			float mz = (float) (-maxVelXZ+2.0*maxVelXZ*r.nextFloat());
 			float my = (float) (minVelY+(maxVelY-minVelY)*r.nextFloat()*r.nextFloat());
 			p.setMotion(mx, my, mz);
-			p.setPos(55, -32, 0);
+			p.setPos(55*0.1f, -32*0.1f, 0);
 			p.pos.x+=p.mot.x*r.nextFloat()*0.3f;
 			p.pos.y+=p.mot.y*r.nextFloat()*0.3f;
 			p.pos.z+=p.mot.z*r.nextFloat()*0.3f;
@@ -901,7 +923,8 @@ public class ParticlePerformanceTest extends GameBase {
 
 	@Override
 	public void tick() {
-		if (init) {
+		if (!isStarting) {
+	        if (VR_SUPPORT) VR.tick();
 			this.cameraController.tickUpdate();
 			if (!pause) {
 				this.updateTickParticles();

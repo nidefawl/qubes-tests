@@ -12,8 +12,10 @@ import org.lwjgl.opengl.*;
 
 import jopenvr.JOpenVRLibrary;
 import jopenvr.JOpenVRLibrary.EVRCompositorError;
+import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
+import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.shader.*;
@@ -21,6 +23,7 @@ import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;
+import nidefawl.qubes.vr.VR;
 import test.game.CameraController;
 
 public class VRApp extends GameBase {
@@ -44,8 +47,13 @@ public class VRApp extends GameBase {
 
 	private GLTriBuffer cube;
 	Shader modelShader;
+    private FontRenderer font;
 	
 	int tick = 0;
+    int action = 0;
+	private String stats;
+	
+	
 	private static boolean startup;
 	
     public void initShaders() {
@@ -69,13 +77,23 @@ public class VRApp extends GameBase {
         }
         startup = false;
     }
-    int action = 0;
+    
 	@Override
 	public void onStatsUpdated() {
-//		System.out.println(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")");
+		this.stats = String.format("%d FPS (%.2fms)", lastFPS, Stats.avgFrameTime);
+
+		if (VR.getFB(0) != null&&Engine.getSceneFB() != null) {
+            String s = String.format("%s - Display %dx%d - Window %dx%d - SceneFB %dx%d - VRFB %dx%d - Gui %dx%d", 
+            		this.stats, 
+            		displayWidth, displayHeight, 
+            		windowWidth, windowHeight, 
+            		Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 
+            		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
+            		guiWidth, guiHeight);
+            setTitle(s);
+		}
 		tick--;
 		if (tick <= 0) {
-			setTitle(lastFPS+"");
 //			initShaders();
 //			Shaders.initShaders();
 			tick = 5;
@@ -96,6 +114,13 @@ public class VRApp extends GameBase {
 
 	@Override
 	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
+		if (action == GLFW.GLFW_PRESS) {
+			switch (key) {
+			case GLFW.GLFW_KEY_F1:
+				toggleVR();
+				break;
+			}
+		}
 	}
 
     boolean once = false;
@@ -140,24 +165,65 @@ public class VRApp extends GameBase {
     }
 	@Override
 	public void render(float f) {
-
-		for (int i = 0; i < 3; i++) {
-			VR.setupCamera(i, f);
+		
+		Engine.setDefaultViewport();
+        for (int eye = 0; eye < (VR_SUPPORT ? 2 : 1); eye++) {
+            if (VR_SUPPORT) {
+                Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
+                Engine.getMatSceneP().update();
+                Engine.updateCamera(VR.getViewMat(eye), Engine.camera.getPosition());
+                UniformBuffer.updateUBO(null, f);
+                VR.setViewPort(eye);
+                Engine.checkGLError("setCameraAndViewport");
+            }
 			renderScene(f);
 	        Shaders.tonemap.enable();
 	        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
-	        VR.bindAndClearFramebuffer(i);
+            FrameBuffer finalTarget = VR_SUPPORT ? VR.getFB(eye) : null;
+            if (finalTarget == null) FrameBuffer.unbindFramebuffer();
+            else {
+                finalTarget.bind();
+                finalTarget.clearFrameBuffer();
+            }
+	        
 	        Engine.drawFullscreenQuad();
 		}
-		FrameBuffer.unbindFramebuffer();
-        Engine.checkGLError("drawAll");
-		VR.Submit();
+        if (VR_SUPPORT) {
+
+            FrameBuffer.unbindFramebuffer();
+            VR.Submit();
+            Engine.checkGLError("VR.Submit");
+            setGUIProjection();
+            Engine.checkGLError("setGUIProjection");
+            VR.drawFullscreenCompanion(guiWidth, guiHeight);
+            Engine.checkGLError("drawFullscreenCompanion");
+        }
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        int hT = 50;
+        int yT = displayHeight-hT;
+		Shaders.colored.enable();
+		Tess.instance.setColorF(0x333300, 0.7f);
+		Tess.instance.add(220, yT);
+		Tess.instance.add(0, yT);
+		Tess.instance.add(0, yT+hT);
+		Tess.instance.add(220, yT+hT);
+		Tess.instance.drawQuads();
+		Shaders.textured.enable();
+		int y = yT+5;
+		this.font.drawString(this.stats, 10, y+=30, -1, true, 1.0f);
+		glDisable(GL_BLEND);
+		Engine.checkGLError("drawGUI");
+        if (VR_SUPPORT) {
+        	setVRProjection();
+        }
 	}
 
 	private Vec3D tmpPos = new Vec3D();
 	@Override
 	public void preRenderUpdate(float f) {
-		VR.updatePose(f);
+		if (VR_SUPPORT) VR.updatePose(f);
 		this.cameraController.update(movement);
 		Vec3D.interp(this.cameraController.lastPos, this.cameraController.pos, f, this.tmpPos);
 		Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);
@@ -170,8 +236,15 @@ public class VRApp extends GameBase {
 	public void postRenderUpdate(float f) {
 	}
 	
-	boolean hadContext = false;
-	
+
+	@Override
+	public void onWindowResize(int displayWidth, int displayHeight) {
+        if (!VR_SUPPORT||isStarting) {
+            Game.displayWidth=displayWidth;
+            Game.displayHeight=displayHeight;
+            setRenderResolution(displayWidth, displayHeight);
+        }
+	}
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
@@ -192,9 +265,8 @@ public class VRApp extends GameBase {
 	        Engine.setSceneFB(sceneFB);
 			FrameBuffer.unbindFramebuffer();
         }
-        glActiveTexture(GL_TEXTURE0);
 	}
-
+	
 	@Override
 	public void tick() {
 		this.cameraController.tickUpdate();
@@ -219,11 +291,12 @@ public class VRApp extends GameBase {
 	@Override
 	public void lateInitGame() {
 		cube = new GLTriBuffer(GL15.GL_STREAM_DRAW);
+		this.font=FontRenderer.get(0, 22, 0);
 		
 
 		redraw();
 		initShaders();
-		VR.initApp(this);
+        VR.initApp(this);
 	}
 
 	@Override

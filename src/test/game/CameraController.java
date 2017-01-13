@@ -12,6 +12,7 @@ import nidefawl.qubes.vec.Vec3D;
  * Copyright: Michael Hept
  */
 public class CameraController {
+	final static float SPEED_MODIFIER=0.02f;
 	public Vec3D pos = new Vec3D();
 	public Vec3D lastPos = new Vec3D();
 	public Vec3D mot = new Vec3D();
@@ -40,8 +41,8 @@ public class CameraController {
         this.yaw = newY;
         this.lastPitch += diffP;
         this.lastYaw += diffY;
-        this.strafe = movement.strafe;
-        this.forward = movement.forward;
+        this.strafe = movement.strafe*SPEED_MODIFIER;
+        this.forward = movement.forward*SPEED_MODIFIER;
         this.jump = movement.jump?1:0;
         this.sneak = movement.sneak;
         movement.mX = 0;
@@ -53,8 +54,8 @@ public class CameraController {
 
         maxSpeed = 0.9F;
         float var7 = 0.0F;
-        this.mot.y -= 0.98D * (this.sneak?1:0);
-        this.mot.y += 0.98D * this.jump;
+        this.mot.y -= 0.98D * (this.sneak?1:0)* SPEED_MODIFIER*5f;
+        this.mot.y += 0.98D * this.jump * SPEED_MODIFIER*5f;
 
         float f4 = 0.0F;
         float f5 = 0.0F;

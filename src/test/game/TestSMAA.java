@@ -55,7 +55,7 @@ public class TestSMAA extends GameBase {
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
-        smaa.render(this.image, 0);
+        smaa.render(this.image, 0, null);
 //        smaa.renderDebug(this.image, 1);
 //        Engine.drawFullscreenQuad();
 	}

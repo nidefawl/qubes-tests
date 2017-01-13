@@ -45,7 +45,7 @@ public class MeshListInterleavedNV extends MeshList {
 	public void draw2() {
 		if (first) {
 			first = false;
-			buffer.reset(GLVAO.vaoBlocks);
+			buffer.preDraw(GLVAO.vaoBlocks);
 			for (VMeshBuffer m : array) {
 				VMeshBufferInterleavedNV il = (VMeshBufferInterleavedNV) m;
 				GLVBO vboV = il.vertexBuffer.getVbo();

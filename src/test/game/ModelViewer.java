@@ -478,7 +478,7 @@ public class ModelViewer extends GameBase {
                 Engine.checkGLError("post GLNativeLib.deleteContext");
         	}
             Engine.checkGLError("pre GLNativeLib.createContext");
-    		HBAOPlus.createContext(displayWidth, displayHeight);
+    		HBAOPlus.createContext(displayWidth, displayHeight, GameBase.baseInstance.caps);
             Engine.checkGLError("post GLNativeLib.createContext");
             Engine.resize(displayWidth, displayHeight);
 			if (buf != null) buf.release();
