@@ -257,7 +257,7 @@ public class ParticlePerformanceTest extends GameBase {
 
     
 
-    private int maxSprites=16*1024;
+    private int maxSprites=3*1024;
 	List<Particle> particles = Lists.newArrayList();
 
 
@@ -658,13 +658,52 @@ public class ParticlePerformanceTest extends GameBase {
 	public void preRenderUpdate(float f) {
 		if (VR_SUPPORT) {
 			VR.updatePose(f);
+			tmp.x = VR.hmdPose.m02;
+			tmp.y = VR.hmdPose.m12;
+			tmp.z = VR.hmdPose.m22;
+//			tmp.normalise();
+			boolean b = true;
+			if (b) {
+//				float yaw = 180-(GameMath.atan2(tmp.x, tmp.z)*GameMath.P_180_OVER_PI);
+				VR.hmdPose.toEuler(tmp);
+				float yaw = 180-(tmp.y*GameMath.P_180_OVER_PI);
+				float pitch = (tmp.x*GameMath.P_180_OVER_PI);
+				float forward = VR.getAxis(0, 0, 1)*-0.1f;
+				float strafe = VR.getAxis(0, 0, 0)*0.1f;
+				this.cameraController.update(pitch, yaw, forward, strafe, 0, false);
+			} else {
+				tmp.y = 0;
+				if (tmp.length()>-1e-4F) {
+					tmp.normalise();
+					tmp.scale(-0.1f);
+					float ftmpF = VR.inputStateRefernceArray[0].rAxis[0].y;
+					tmp.scale(ftmpF);
+					this.cameraController.mot.addVec(tmp);
+					tmp.x = VR.hmdPose.m00;
+					tmp.y = VR.hmdPose.m10;
+					tmp.z = VR.hmdPose.m20;
+					tmp.normalise();
+					tmp.scale(0.1f);
+					float ftmpS = VR.inputStateRefernceArray[0].rAxis[0].x;
+					tmp.scale(ftmpS);
+					this.cameraController.mot.addVec(tmp);
+				}
+			}
+		} else {
+			this.cameraController.update(movement);
 		}
-		this.cameraController.update(movement);
+		
 		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
 		this.tmpPos.scale(f);
 		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
         Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+
+		if (VR_SUPPORT) {
+			
+		} else {
+	        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+		}
+		
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(5850);
 //        Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
@@ -925,7 +964,16 @@ public class ParticlePerformanceTest extends GameBase {
 	public void tick() {
 		if (!isStarting) {
 	        if (VR_SUPPORT) VR.tick();
-			this.cameraController.tickUpdate();
+			if (VR_SUPPORT) {
+				boolean b = true;
+				if (b) {
+					this.cameraController.tickUpdate();
+				} else {
+					this.cameraController.move();
+				}
+			} else {
+				this.cameraController.tickUpdate();
+			}
 			if (!pause) {
 				this.updateTickParticles();
 //				if (this.particles.isEmpty()) {

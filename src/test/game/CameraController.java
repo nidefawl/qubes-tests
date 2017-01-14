@@ -35,22 +35,26 @@ public class CameraController {
         float my = -movement.mY * fa;
         float newP = (float) Math.max(-90F, Math.min(90F, this.pitch + my));
         float newY = (float) this.yaw + mx;
+        update(newP, newY, movement.forward*SPEED_MODIFIER, movement.strafe*SPEED_MODIFIER, movement.jump?1:0, movement.sneak);
+        movement.mX = 0;
+        movement.mY = 0;
+	}
+	
+	public void update(float newP, float newY, float forward, float strafe, float jump, boolean sneak) {
         float diffP = newP - this.pitch;
         float diffY = newY - this.yaw;
         this.pitch = newP;
         this.yaw = newY;
         this.lastPitch += diffP;
         this.lastYaw += diffY;
-        this.strafe = movement.strafe*SPEED_MODIFIER;
-        this.forward = movement.forward*SPEED_MODIFIER;
-        this.jump = movement.jump?1:0;
-        this.sneak = movement.sneak;
-        movement.mX = 0;
-        movement.mY = 0;
+        this.forward = forward;
+        this.strafe = strafe;
+        this.jump = jump;
+        this.sneak = sneak;
 	}
+	
 	public void tickUpdate() {
         float vel = GameMath.sqrtf(this.forward * this.forward + this.strafe * this.strafe);
-        float slowdown = 0.28F;
 
         maxSpeed = 0.9F;
         float var7 = 0.0F;
@@ -75,6 +79,12 @@ public class CameraController {
             f6 = strafe * sinY;
             f7 = forward * cosY;
         }
+	    if (this.yaw > 360)
+	        this.yaw -= 360;
+	    if (this.yaw < 0)
+	        this.yaw += 360;
+        this.lastYaw = this.yaw;
+        this.lastPitch = this.pitch;
 
         float f8 = GameMath.degreesToRadians(-this.pitch);
         float fm = GameMath.cos(f8);
@@ -89,17 +99,17 @@ public class CameraController {
             this.mot.y += (double) (f3 * f11);
             this.mot.z += (double) (f9 * f11);
         }
+        move();
+	}
+	
+	public void move() {
+
         this.jump *= 1;
-    
-	    if (this.yaw > 360)
-	        this.yaw -= 360;
-	    if (this.yaw < 0)
-	        this.yaw += 360;
-        this.lastYaw = this.yaw;
-        this.lastPitch = this.pitch;
+
         this.lastMot.set(this.mot);
         this.lastPos.set(this.pos);
         Vec3D.add(this.pos, this.mot, this.pos);
+        float slowdown = 0.28F;
         this.mot.x *= slowdown;
         this.mot.z *= slowdown;
         this.mot.y *= slowdown;
