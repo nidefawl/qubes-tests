@@ -517,8 +517,8 @@ public class Hex extends GameBase {
 		if (ortho) {
 			left = 10;
 			top = 10;
-			rWidth = displayWidth-20;
-			rHeight = displayHeight-20;
+			rWidth = displayWidth - 20;
+			rHeight = displayHeight - 20;
 //			BufferedMatrix mat = Engine.getMatSceneP();
 //			mat.setZero();
 //			int scale = (int) (1024*(4)+zoom*128);
