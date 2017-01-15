@@ -32,6 +32,7 @@ import nidefawl.qubes.world.biomes.HexBiomesServer;
 
 public class Hex extends GameBase {
 	final CameraController cameraController = new CameraController();
+	final PositionMouseOver mouseOverRight = new PositionMouseOver();
 	private FrameBuffer sceneFB;
 	boolean ortho = true;
 	public Hex() {
@@ -556,21 +557,21 @@ public class Hex extends GameBase {
             if (winY < 0) winY = 0; if (winY > displayHeight) winY = 1;
         }
 		hit = null;
-        if (Engine.vDir != null) {
+		mouseOverRight.updateMouseFromScreenPos(winX, winY, displayWidth, displayHeight, null);
+        if (mouseOverRight.vDir != null) {
         	Vector3f tmp = new Vector3f(0, 1, 0); //plane normal
         	
         	//ray-plane intersection (plane = y axis at 0 aka ground)
-        	double t = - (Vector3f.dot(tmp, Engine.vOrigin)) / (Vector3f.dot(tmp, Engine.vDir));
+        	double t = - (Vector3f.dot(tmp, mouseOverRight.vOrigin)) / (Vector3f.dot(tmp, mouseOverRight.vDir));
         	if (t > 0) {
-        		tmp.set(Engine.vDir);
+        		tmp.set(mouseOverRight.vDir);
         		tmp.scale((float) t);
-        		tmp.addVec(Engine.vOrigin);
+        		tmp.addVec(mouseOverRight.vOrigin);
         		hit = tmp;
         	} else {
 //        		System.err.println("nope");
         	}
         }
-        Engine.updateMouseOverView(winX, winY, this.movement.grabbed());
 
 	}
 
