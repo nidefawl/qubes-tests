@@ -10,8 +10,6 @@ import java.nio.IntBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
 
-import jopenvr.JOpenVRLibrary;
-import jopenvr.JOpenVRLibrary.EVRCompositorError;
 import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
