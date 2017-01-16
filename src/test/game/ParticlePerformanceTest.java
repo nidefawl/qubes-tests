@@ -658,14 +658,14 @@ public class ParticlePerformanceTest extends GameBase {
 	public void preRenderUpdate(float f) {
 		if (VR_SUPPORT) {
 			VR.updatePose(f);
-			tmp.x = VR.hmdPose.m02;
-			tmp.y = VR.hmdPose.m12;
-			tmp.z = VR.hmdPose.m22;
+			tmp.x = VR.pose.m02;
+			tmp.y = VR.pose.m12;
+			tmp.z = VR.pose.m22;
 //			tmp.normalise();
 			boolean b = true;
 			if (b) {
 //				float yaw = 180-(GameMath.atan2(tmp.x, tmp.z)*GameMath.P_180_OVER_PI);
-				VR.hmdPose.toEuler(tmp);
+				VR.pose.toEuler(tmp);
 				float yaw = 180-(tmp.y*GameMath.P_180_OVER_PI);
 				float pitch = (tmp.x*GameMath.P_180_OVER_PI);
 				float forward = VR.getAxis(0, 0, 1)*-0.1f;
@@ -679,9 +679,9 @@ public class ParticlePerformanceTest extends GameBase {
 					float ftmpF = VR.inputStateRefernceArray[0].rAxis[0].y;
 					tmp.scale(ftmpF);
 					this.cameraController.mot.addVec(tmp);
-					tmp.x = VR.hmdPose.m00;
-					tmp.y = VR.hmdPose.m10;
-					tmp.z = VR.hmdPose.m20;
+					tmp.x = VR.pose.m00;
+					tmp.y = VR.pose.m10;
+					tmp.z = VR.pose.m20;
 					tmp.normalise();
 					tmp.scale(0.1f);
 					float ftmpS = VR.inputStateRefernceArray[0].rAxis[0].x;
