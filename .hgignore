@@ -1,2 +1,13 @@
 syntax: regexp
+^compile\\*$
+^compileserver\\*$
 ^bin\\*$
+^config\\*$
+^worlds\\*$
+^server\\*$
+^playerdata\\*$
+^regions\\*$
+^packs\\*$
+^sphax\\*$
+^commandhistory.txt$
+^settings.yml$
