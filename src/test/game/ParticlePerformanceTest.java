@@ -8,6 +8,7 @@ import java.nio.*;
 import java.util.List;
 import java.util.Random;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
 
@@ -35,12 +36,16 @@ import nidefawl.qubes.vec.*;
 import nidefawl.qubes.vr.VR;
 
 public class ParticlePerformanceTest extends GameBase {
-    public final static int MAX_PARTICLES       = 1024*16;
+    public final static int MAX_PARTICLES       = 1024*8;
 	
     public final static ShaderBuffer        ssbo_particle_cubes        = new ShaderBuffer("ParticleCube_mat_model")
             .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_cubes_blockinfo = new ShaderBuffer("ParticleCube_blockinfo")
             .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES);
+    public final static ShaderBuffer        ssbo_particle_cubes_persist        = new ShaderBuffer("ParticleCube_mat_model_persist")
+            .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES).setMakePersistantMapped(true);
+    public final static ShaderBuffer        ssbo_particle_cubes_blockinfo_persist = new ShaderBuffer("ParticleCube_blockinfo_persist")
+            .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES).setMakePersistantMapped(true);
     public final static ShaderBuffer        ssbo_particle_structs = new ShaderBuffer("ParticleCube_data")
             .setSize((20*4)*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_arrays = new ShaderBuffer("ParticleCube_data_arrays")
@@ -233,6 +238,7 @@ public class ParticlePerformanceTest extends GameBase {
 	Shader skybox;
 	Shader particleShaderStruct;
 	Shader particleShaderSeperateBuffer;
+	Shader particleShaderSeperateBufferPersist;
 	Shader particleShaderArrays;
 	
 	private TesselatorState tessState;
@@ -329,6 +335,21 @@ public class ParticlePerformanceTest extends GameBase {
                     return null;
                 }
             });
+            Shader particleShaderSeperateBufferPersist = assetMgr.loadShader(newshaders, "particle/cube_performance_test_ssbo", new IShaderDef() {
+                @Override
+                public String getDefinition(String define) {
+                    if ("PARTICLE_TYPE".equals(define)) {
+                        return "#define PARTICLE_TYPE_BLOCK";
+                    }
+                    if ("MAX_PARTICLES".equals(define)) {
+                        return "#define MAX_PARTICLES "+MAX_PARTICLES;
+                    }
+                    if ("USE_STRUCT_BUFFER".equals(define)) {
+                        return "#define USE_PERSIST_BUFFER";
+                    }
+                    return null;
+                }
+            });
             Shader new_deferred = assetMgr.loadShader(newshaders, "post/deferred", new IShaderDef() {
                 @Override
                 public String getDefinition(String define) {
@@ -347,6 +368,7 @@ public class ParticlePerformanceTest extends GameBase {
             particleShaderStruct = particleStruct;
             particleShaderArrays = particleArrays;
             particleShaderSeperateBuffer = particleSeperateBuffer;
+            this.particleShaderSeperateBufferPersist = particleShaderSeperateBufferPersist;
             this.skybox = skybox;
             this.shaderDeferred.enable();
             shaderDeferred.setProgramUniform1i("texColor", 0);
@@ -366,6 +388,10 @@ public class ParticlePerformanceTest extends GameBase {
             particleShaderSeperateBuffer.setProgramUniform1i("blockTextures", 0);
             particleShaderSeperateBuffer.setProgramUniform1i("noisetex", 1);
             particleShaderSeperateBuffer.setProgramUniform1i("normalTextures", 2);
+            particleShaderSeperateBufferPersist.enable();
+            particleShaderSeperateBufferPersist.setProgramUniform1i("blockTextures", 0);
+            particleShaderSeperateBufferPersist.setProgramUniform1i("noisetex", 1);
+            particleShaderSeperateBufferPersist.setProgramUniform1i("normalTextures", 2);
             particleShaderArrays.enable();
             particleShaderArrays.setProgramUniform1i("blockTextures", 0);
             particleShaderArrays.setProgramUniform1i("noisetex", 1);
@@ -484,7 +510,8 @@ public class ParticlePerformanceTest extends GameBase {
 		Tess.instance.add(4*w, 0, d*4);
 		Tess.instance.add(4*w, 0, -d*4);
 		Tess.instance.draw(GL_QUADS, this.tessState);
-        VR.initApp(this);
+		
+		
 	}
 	@Override
 	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
@@ -510,7 +537,7 @@ public class ParticlePerformanceTest extends GameBase {
 				selFormat ^= 1;
 				break;
 			case GLFW.GLFW_KEY_6:
-				selShader = (selShader+1)%3;
+				selShader = (selShader+1)%2;
 				break;
 			case GLFW.GLFW_KEY_7:
 				initShaders();
@@ -596,9 +623,9 @@ public class ParticlePerformanceTest extends GameBase {
 			if (fbDeferred != null) fbDeferred.release();
 	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);
+	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGBA16F);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT2, GL_RGBA16UI);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT3, GL_RGB16F);
+	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT3, GL_RGBA16F);
 	        sceneFB.setFilter(GL_COLOR_ATTACHMENT2, GL_NEAREST, GL_NEAREST);
 	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT0, 0F, 0F, 0F, 0F);
 	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT0, 1.0F, 1.0F, 1.0F, 1.0F);
@@ -652,6 +679,10 @@ public class ParticlePerformanceTest extends GameBase {
 	}
 	@Override
 	public void postRenderUpdate(float f) {
+		if (VR_SUPPORT) {
+			VR.updatePose(f);
+
+		}
 	}
 
 	@Override
@@ -736,7 +767,7 @@ public class ParticlePerformanceTest extends GameBase {
 	}
 	@Override
 	public void render(float fTime) {
-        glDisable(GL_BLEND);
+		Engine.setBlend(false);
         
         glClearColor(0.71F, 0.82F, 1.00F, 1F);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
@@ -761,7 +792,11 @@ public class ParticlePerformanceTest extends GameBase {
 			Engine.drawFullscreenQuad();
 			Engine.enableDepthMask(true);
 			glEnable(GL11.GL_DEPTH_TEST);
+
 			renderParticles(fTime);
+			if (selShader==1) {
+//				GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+			}
 			glDisable(GL11.GL_DEPTH_TEST);
 			
 			fbDeferred.bind();
@@ -797,13 +832,16 @@ public class ParticlePerformanceTest extends GameBase {
 //            System.out.println("eye "+eye+" GL11.glGetBoolean(GL11.GL_CULL_FACE) "+GL11.glGetBoolean(GL11.GL_CULL_FACE));
 //            System.out.println("eye "+eye+"GL11.glGetBoolean(GL11.GL_DEPTH_TEST) "+GL11.glGetBoolean(GL11.GL_DEPTH_TEST));
 
-			glEnable(GL11.GL_DEPTH_TEST);
-			glDisable(GL11.GL_CULL_FACE);
-            Engine.updateCamera(VR.getViewMat(eye), Vector3f.ZERO);
-            UniformBuffer.updateUBO(null, fTime);
-			VR.renderControllers();
-			glEnable(GL11.GL_CULL_FACE);
-			glDisable(GL11.GL_DEPTH_TEST);
+			if (VR_SUPPORT) {
+				
+				glEnable(GL11.GL_DEPTH_TEST);
+				glDisable(GL11.GL_CULL_FACE);
+	            Engine.updateCamera(VR.getPoseMat(eye), Vector3f.ZERO);
+	            UniformBuffer.updateUBO(null, fTime);
+				VR.renderControllers();
+				glEnable(GL11.GL_CULL_FACE);
+				glDisable(GL11.GL_DEPTH_TEST);
+			}
 		
 		}
 
@@ -813,13 +851,15 @@ public class ParticlePerformanceTest extends GameBase {
             FrameBuffer.unbindFramebuffer();
             VR.Submit();
             Engine.checkGLError("VR.Submit");
-            setGUIProjection();
-            Engine.checkGLError("setGUIProjection");
-            VR.drawFullscreenCompanion(guiWidth, guiHeight);
+            Game.displayWidth=windowWidth;
+            Game.displayHeight=windowHeight;
+            updateProjection();
+            if (Game.GL_ERROR_CHECKS) Engine.checkGLError("setGUIProjection");
+            VR.drawFullscreenCompanion(windowWidth, windowHeight);
             Engine.checkGLError("drawFullscreenCompanion");
         }
 		glClear(GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int yT = 400;
         int hT = displayHeight-yT;
@@ -835,26 +875,34 @@ public class ParticlePerformanceTest extends GameBase {
 		this.font.drawString(this.stats, 10, y+=30, -1, true, 1.0f);
 		y+=30;
 		this.font.drawString(""+storedSprites+"/"+maxSprites+" sprites", 10, y+=30, -1, true, 1.0f, 0);
+		this.font.drawString("selected shader: "+selShader, 10, y+=30, -1, true, 1.0f, 0);	
 		this.font.drawString("selected format: "+selFormat, 10, y+=30, -1, true, 1.0f, 0);	
 		if (this.error != null) {
 			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
 		}
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		// Engine.checkGLError("drawAll");
         if (VR_SUPPORT) {
         	setVRProjection();
         }
 	}
 	private void renderParticles(float f) {
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 
 
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+//        GL40.glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+//        for (int i = 0; i < 3; i++) {
+//            GL40.glBlendFuncSeparatei(1+i, GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+//        }
         if (selShader == 0) {
         	particleShaderSeperateBuffer.enable();
         } else if (selShader == 1) {
+        	particleShaderSeperateBufferPersist.enable();
+        } else if (selShader == 2) {
         	particleShaderStruct.enable();
         } else {
         	particleShaderArrays.enable();
@@ -875,7 +923,6 @@ public class ParticlePerformanceTest extends GameBase {
 
 //		GL31.glDrawElementsInstanced(GL11.GL_TRIANGLES, 6, GL11.GL_UNSIGNED_INT, 0, this.storedSprites);
 		Engine.checkGLError("draw");
-        GL30.glBindVertexArray(0);
         Engine.bindVAO(null);
 	}
 
@@ -915,14 +962,18 @@ public class ParticlePerformanceTest extends GameBase {
 				return;
 		}
 	}
-	
+	FloatBuffer buffer = BufferUtils.createFloatBuffer(ssbo_particle_cubes_persist.getSize());
+	IntBuffer buffer2 = BufferUtils.createIntBuffer(ssbo_particle_cubes_blockinfo_persist.getSize());
 	void storeParticles(float ftime, int n) {
-		IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
-		FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
 		if (selShader == 0) {
+			IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
+			FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
 	        bufModelMat.clear();
 	        bufBlockInfo.clear();
 		} else if (selShader == 1) {
+			buffer.clear();
+			buffer2.clear();
+		}  if (selShader == 2) {
 			ssbo_particle_structs.clearBuffers();
 		} else {
 			ssbo_particle_arrays.clearBuffers();
@@ -937,8 +988,12 @@ public class ParticlePerformanceTest extends GameBase {
 			}
 			Particle cloud = particles.get(i);
 			if (selShader == 0) {
+				IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
+				FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
 				storedSprites+=cloud.store(offset, bufModelMat, bufBlockInfo);
 			} else if (selShader == 1) {
+				storedSprites+=cloud.store(offset, buffer, buffer2);
+			} else if (selShader == 2) {
 				storedSprites+=cloud.storeInterlacedStruct(offset, ssbo_particle_structs);
 			} else {
 				storedSprites+=cloud.storeArrays(offset, ssbo_particle_arrays);
@@ -946,11 +1001,22 @@ public class ParticlePerformanceTest extends GameBase {
 			offset++;
 		}
 		if (selShader == 0) {
+			IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
+			FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
 	        bufModelMat.flip();
 	        bufBlockInfo.flip();
 	        ssbo_particle_cubes.update();
 	        ssbo_particle_cubes_blockinfo.update();
 		} else if (selShader == 1) {
+			buffer.flip();
+			buffer2.flip();
+			ssbo_particle_cubes_persist.getFloatBuffer().clear();
+			ssbo_particle_cubes_blockinfo_persist.getIntBuffer().clear();
+			ssbo_particle_cubes_persist.getFloatBuffer().put(buffer);
+			ssbo_particle_cubes_blockinfo_persist.getIntBuffer().put(buffer2);
+			ssbo_particle_cubes_persist.update();
+	        ssbo_particle_cubes_blockinfo_persist.update();
+		} else if (selShader == 2) {
 			ssbo_particle_structs.getBuf().flip();
 			ssbo_particle_structs.update();
 		} else {

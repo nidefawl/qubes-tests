@@ -241,7 +241,7 @@ public class TestFontRenderer extends GameBase {
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
 		FrameBuffer.unbindFramebuffer();
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
 	}
 
 	@Override

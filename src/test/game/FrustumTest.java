@@ -108,7 +108,7 @@ public class FrustumTest extends GameBase {
 //		glPointSize(4.0f);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, TMgr.getEmptyWhite());
 		Engine.pxStack.push();
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		int k = 4;
 		int r = 10;
         Engine.bindVAO(GLVAO.vaoModel);

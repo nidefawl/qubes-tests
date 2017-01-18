@@ -174,7 +174,7 @@ public class VertexPointerTest extends GameBase {
             GPUProfiler.start("render");
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
-	    glDisable(GL_BLEND);
+	    Engine.setBlend(false);
 	    
 	    Engine.enableDepthMask(false);
 	    skyShader.enable();
@@ -191,7 +191,7 @@ public class VertexPointerTest extends GameBase {
 //		glPointSize(4.0f);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, TMgr.getEmptyWhite());
 //		Engine.pxStack.push();
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		int k = 20;
 		int r = 2;
 //        this.buf.bind();
@@ -274,7 +274,7 @@ public class VertexPointerTest extends GameBase {
         GLDebugTextures.drawAll(displayWidth, displayHeight);
         Engine.checkGLError("drawAll");
         GPUProfiler.end();
-	    glEnable(GL_BLEND);
+	    Engine.setBlend(true);
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		Shaders.colored.enable();

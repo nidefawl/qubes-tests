@@ -417,7 +417,7 @@ public class TestNanoVG extends GameBase {
 		glEnable(GL_DEPTH_TEST);
 		Engine.setDefaultViewport();
 		Engine.bindVAO(null);
-	    glEnable(GL_BLEND);
+	    Engine.setBlend(true);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glActiveTexture(GL_TEXTURE0);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -529,7 +529,7 @@ public class TestNanoVG extends GameBase {
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
 		FrameBuffer.unbindFramebuffer();
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
 		initGraph(fps, GRAPH_RENDER_FPS, "Frame Time");
 
 		vg = nvgCreate(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);

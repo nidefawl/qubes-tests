@@ -297,10 +297,10 @@ public class ModelViewer extends GameBase {
         }
         if (showBones) {
 	        glClear(GL11.GL_DEPTH_BUFFER_BIT);
-        	GL11.glDisable(GL11.GL_BLEND);
+        	Engine.setBlend(false);
         	
         	renderBones((ModelRigged)this.entityModel.model, curRender.modelMat);
-        	GL11.glEnable(GL11.GL_BLEND);
+        	Engine.setBlend(true);
         }
     
         
@@ -565,8 +565,8 @@ public class ModelViewer extends GameBase {
 	@Override
 	public void lateInitGame() {
         EntityModelManager.getInstance().reload();
-        renderBatched.initShaders();
-        renderSingle.initShaders();
+        renderBatched.init();
+        renderSingle.init();
 		tessState = new TesselatorState(GL15.GL_STATIC_DRAW);
 		int w = 1;
 		int d = 4;

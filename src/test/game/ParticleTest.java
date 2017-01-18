@@ -470,7 +470,7 @@ public class ParticleTest extends GameBase {
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
 		Engine.enableDepthMask(false);
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		skybox.enable();
 		Engine.drawFullscreenQuad();
 		Engine.enableDepthMask(true);
@@ -501,7 +501,7 @@ public class ParticleTest extends GameBase {
 		Shaders.tonemap.enable();
 		Shaders.tonemap.setProgramUniform1f("constexposure", 130);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
-//		glDisable(GL_BLEND);
+//		Engine.setBlend(false);
 		if (renderMode >= 1) {
 
 			Shaders.textured.enable();
@@ -511,7 +511,7 @@ public class ParticleTest extends GameBase {
 
 
 
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         
 		Shaders.colored.enable();
@@ -533,11 +533,11 @@ public class ParticleTest extends GameBase {
 		// Engine.checkGLError("drawAll");
 	}
 	private void renderParticles(float f) {
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texNoise);
 
 
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         spriteShader.enable();
