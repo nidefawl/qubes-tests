@@ -614,7 +614,6 @@ public class ParticlePerformanceTest2 extends GameBase {
 	@Override
 	public void preRenderUpdate(float f) {
 		if (VR_SUPPORT) {
-			VR.updatePose(f);
 			tmp.x = VR.pose.m02;
 			tmp.y = VR.pose.m12;
 			tmp.z = VR.pose.m22;
