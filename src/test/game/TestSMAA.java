@@ -48,11 +48,11 @@ public class TestSMAA extends GameBase {
 	public void render(float f) {
         glClearColor(0.11F, 0.82F, 1.00F, 1F);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 //        Shaders.textured.enable();
 //        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
         //TODO: move outside
-        glDisable(GL_BLEND);
+        Engine.setBlend(false);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         smaa.render(this.image, 0, null);

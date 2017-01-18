@@ -149,7 +149,7 @@ public class TestPointSprites extends GameBase {
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
 
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		Engine.enableDepthMask(false);
 		if (GL_ERROR_CHECKS)
 			Engine.checkGLError("skyShader.drawSkybox");
@@ -161,7 +161,7 @@ public class TestPointSprites extends GameBase {
 
 		//
 		glDisable(GL11.GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texCloud);
 		spriteShader.enable();
@@ -173,7 +173,7 @@ public class TestPointSprites extends GameBase {
 		FrameBuffer.unbindFramebuffer();
 		Engine.enableDepthMask(true);
 
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		glDisable(GL11.GL_DEPTH_TEST);
 		Engine.checkGLError("Pass0");
 		fbDeferred.bind();
@@ -198,7 +198,7 @@ public class TestPointSprites extends GameBase {
 		Engine.drawFullscreenQuad();
 
 		Shaders.textured.enable();
-        glEnable(GL_BLEND);
+        Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		this.font.drawString(this.stats, 0, 180, -1, true, 1.0f);
 		// Engine.checkGLError("drawAll");

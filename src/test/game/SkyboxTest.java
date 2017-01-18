@@ -181,7 +181,7 @@ private String error;
 		
 
 		glDisable(GL11.GL_DEPTH_TEST);
-//		glDisable(GL_BLEND);
+//		Engine.setBlend(false);
 //		skyShader.enable();
 //		skybox1.bindAndDraw(GL_QUAD_STRIP);
 //		skybox2.bindAndDraw(GL_QUADS);
@@ -191,7 +191,7 @@ private String error;
 //		
 		
 		
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
@@ -220,7 +220,7 @@ private String error;
 		
 		Engine.enableDepthMask(true);
 
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		glDisable(GL11.GL_DEPTH_TEST);
 		Engine.checkGLError("Pass0");
 		fbDeferred.bind();
@@ -245,7 +245,7 @@ private String error;
 		Engine.drawFullscreenQuad();
 
 
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);

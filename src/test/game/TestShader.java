@@ -89,7 +89,7 @@ public class TestShader extends GameBase implements ITextEdit {
 //        Engine.drawFullscreenQuad();
 //        glClear(GL11.GL_DEPTH_BUFFER_BIT);
 //		Shaders.textured.enable();
-//        glEnable(GL_BLEND);
+//        Engine.setBlend(true);
 //        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 //        Engine.pxStack.push(50, 50, 50);
 //        this.text.width = Game.displayWidth-100;
@@ -233,7 +233,7 @@ public class TestShader extends GameBase implements ITextEdit {
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
 		FrameBuffer.unbindFramebuffer();
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
 	}
 
 	@Override

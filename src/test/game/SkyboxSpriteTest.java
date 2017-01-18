@@ -263,7 +263,7 @@ public class SkyboxSpriteTest extends GameBase {
 	}
 
 	private void renderSky(float f) {
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texNoise);
 		cloudsShader.enable();
 		cloudsShader.setProgramUniform1f("rainStrength", WEATHER);
@@ -277,7 +277,7 @@ public class SkyboxSpriteTest extends GameBase {
 		}
 
 
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         spriteShader.enable();
@@ -295,7 +295,7 @@ public class SkyboxSpriteTest extends GameBase {
         }
         GL30.glBindVertexArray(0);
         Engine.bindVAO(null);
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 	}
 
 

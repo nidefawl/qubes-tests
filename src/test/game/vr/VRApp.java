@@ -136,7 +136,7 @@ public class VRApp extends GameBase {
 //		glPointSize(4.0f);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, TMgr.getEmptyWhite());
 		Engine.pxStack.push();
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		int k = 4;
 		int r = 10;
         Engine.bindVAO(GLVAO.vaoStaticModel);
@@ -197,7 +197,7 @@ public class VRApp extends GameBase {
             Engine.checkGLError("drawFullscreenCompanion");
         }
 		glClear(GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_BLEND);
+		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int hT = 50;
         int yT = displayHeight-hT;
@@ -211,7 +211,7 @@ public class VRApp extends GameBase {
 		Shaders.textured.enable();
 		int y = yT+5;
 		this.font.drawString(this.stats, 10, y+=30, -1, true, 1.0f);
-		glDisable(GL_BLEND);
+		Engine.setBlend(false);
 		Engine.checkGLError("drawGUI");
         if (VR_SUPPORT) {
         	setVRProjection();
