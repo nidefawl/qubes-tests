@@ -25,8 +25,8 @@ import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.LoadingScreen;
 import nidefawl.qubes.input.KeybindManager;
 import nidefawl.qubes.models.*;
+import nidefawl.qubes.models.render.ModelConstants;
 import nidefawl.qubes.models.render.QModelBatchedRender;
-import nidefawl.qubes.render.BatchedRiggedModelRenderer;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
@@ -39,13 +39,13 @@ public class ParticlePerformanceTest extends GameBase {
     public final static int MAX_PARTICLES       = 1024*8;
 	
     public final static ShaderBuffer        ssbo_particle_cubes        = new ShaderBuffer("ParticleCube_mat_model")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES);
+            .setSize(ModelConstants.SIZE_OF_MAT4*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_cubes_blockinfo = new ShaderBuffer("ParticleCube_blockinfo")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES);
+            .setSize(ModelConstants.SIZE_OF_VEC4*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_cubes_persist        = new ShaderBuffer("ParticleCube_mat_model_persist")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES).setMakePersistantMapped(true);
+            .setSize(ModelConstants.SIZE_OF_MAT4*MAX_PARTICLES).setMakePersistantMapped(true);
     public final static ShaderBuffer        ssbo_particle_cubes_blockinfo_persist = new ShaderBuffer("ParticleCube_blockinfo_persist")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES).setMakePersistantMapped(true);
+            .setSize(ModelConstants.SIZE_OF_VEC4*MAX_PARTICLES).setMakePersistantMapped(true);
     public final static ShaderBuffer        ssbo_particle_structs = new ShaderBuffer("ParticleCube_data")
             .setSize((20*4)*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_arrays = new ShaderBuffer("ParticleCube_data_arrays")
@@ -137,8 +137,8 @@ public class ParticlePerformanceTest extends GameBase {
 			FloatBuffer floatBuf = ssboParticleData.getFloatBuffer();
 			IntBuffer intBuf = ssboParticleData.getIntBuffer();
 			int structSize = 20;
-			floatBuf.position(offset*(structSize));
-			intBuf.position((offset*(structSize))+16);
+			floatBuf.position(ssboParticleData.offsetInt()+offset*(structSize));
+			intBuf.position(ssboParticleData.offsetInt()+(offset*(structSize))+16);
 			
 			BufferedMatrix mat = Engine.getTempMatrix();
 			mat.setIdentity();
@@ -158,8 +158,8 @@ public class ParticlePerformanceTest extends GameBase {
 		public int storeArrays(int offset, ShaderBuffer ssboParticleData) {
 			FloatBuffer floatBuf = ssboParticleData.getFloatBuffer();
 			IntBuffer intBuf = ssboParticleData.getIntBuffer();
-			floatBuf.position(offset*(16));
-			intBuf.position(MAX_PARTICLES*16+offset*1);
+			floatBuf.position(ssboParticleData.offsetInt()+offset*(16));
+			intBuf.position(ssboParticleData.offsetInt()+MAX_PARTICLES*16+offset*1);
 			
 			BufferedMatrix mat = Engine.getTempMatrix();
 			mat.setIdentity();
@@ -961,17 +961,14 @@ public class ParticlePerformanceTest extends GameBase {
 				return;
 		}
 	}
-	FloatBuffer buffer = BufferUtils.createFloatBuffer(ssbo_particle_cubes_persist.getSize());
-	IntBuffer buffer2 = BufferUtils.createIntBuffer(ssbo_particle_cubes_blockinfo_persist.getSize());
+	
 	void storeParticles(float ftime, int n) {
 		if (selShader == 0) {
-			IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
-			FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
-	        bufModelMat.clear();
-	        bufBlockInfo.clear();
+			ssbo_particle_cubes.nextFrame();
+			ssbo_particle_cubes_blockinfo.nextFrame();
 		} else if (selShader == 1) {
-			buffer.clear();
-			buffer2.clear();
+			ssbo_particle_cubes_persist.nextFrame();
+			ssbo_particle_cubes_blockinfo_persist.nextFrame();
 		}  if (selShader == 2) {
 			ssbo_particle_structs.clearBuffers();
 		} else {
@@ -991,7 +988,9 @@ public class ParticlePerformanceTest extends GameBase {
 				FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
 				storedSprites+=cloud.store(offset, bufModelMat, bufBlockInfo);
 			} else if (selShader == 1) {
-				storedSprites+=cloud.store(offset, buffer, buffer2);
+				IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo_persist.getIntBuffer();
+				FloatBuffer bufModelMat = ssbo_particle_cubes_persist.getFloatBuffer();
+				storedSprites+=cloud.store(offset, bufModelMat, bufBlockInfo);
 			} else if (selShader == 2) {
 				storedSprites+=cloud.storeInterlacedStruct(offset, ssbo_particle_structs);
 			} else {
@@ -1000,19 +999,9 @@ public class ParticlePerformanceTest extends GameBase {
 			offset++;
 		}
 		if (selShader == 0) {
-			IntBuffer bufBlockInfo = ssbo_particle_cubes_blockinfo.getIntBuffer();
-			FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
-	        bufModelMat.flip();
-	        bufBlockInfo.flip();
 	        ssbo_particle_cubes.update();
 	        ssbo_particle_cubes_blockinfo.update();
 		} else if (selShader == 1) {
-			buffer.flip();
-			buffer2.flip();
-			ssbo_particle_cubes_persist.getFloatBuffer().clear();
-			ssbo_particle_cubes_blockinfo_persist.getIntBuffer().clear();
-			ssbo_particle_cubes_persist.getFloatBuffer().put(buffer);
-			ssbo_particle_cubes_blockinfo_persist.getIntBuffer().put(buffer2);
 			ssbo_particle_cubes_persist.update();
 	        ssbo_particle_cubes_blockinfo_persist.update();
 		} else if (selShader == 2) {

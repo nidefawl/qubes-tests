@@ -52,7 +52,8 @@ public class ModelViewer extends GameBase {
     public static ModelViewer instance;
     public ModelViewer() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
+		Engine.initRenderers = true;
+		QModelBatchedRender.isModelViewer = true;
 		Gui.FONT_SIZE_WINDOW_TITLE = 16;
 		Gui.FONT_SIZE_BUTTON = 14;
 	}
@@ -136,7 +137,7 @@ public class ModelViewer extends GameBase {
 	public boolean showBones;
 	public boolean showWireframe;
 	public boolean renderBatchedMode;
-	QModelRender renderBatched;
+	QModelBatchedRender renderBatched;
 	QModelRender renderSingle;
 	QModelRender curRender = null;
 	EntityModel entityModel;
@@ -175,6 +176,10 @@ public class ModelViewer extends GameBase {
 			break;
 		case GLFW.GLFW_KEY_KP_SUBTRACT:
 			setModel(this.modelidx-1);
+			break;
+		case GLFW.GLFW_KEY_2:
+			this.renderBatched.initShaders();
+			initShaders();
 			break;
 		}
 	}
@@ -311,6 +316,14 @@ public class ModelViewer extends GameBase {
         Shaders.tonemap.enable();
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, buf2.getTexture(0));
         Engine.drawFullscreenQuad();
+
+        GLDebugTextures selTex = GLDebugTextures.getSelected();
+//        &&ticksran%40<20
+        if (selTex != null) {
+            GLDebugTextures.drawFullScreen(selTex);
+        } 
+        
+        
         GLDebugTextures.drawAll(displayWidth, displayHeight);
         Engine.checkGLError("drawAll");
         double mx = Mouse.getX();
@@ -566,6 +579,7 @@ public class ModelViewer extends GameBase {
 	public void lateInitGame() {
         EntityModelManager.getInstance().reload();
         renderBatched.init();
+        renderBatched.setRenderer(QModelBatchedRender.RENDERER_WORLD_MODELVIEWER);
         renderSingle.init();
 		tessState = new TesselatorState(GL15.GL_STATIC_DRAW);
 		int w = 1;

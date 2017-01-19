@@ -23,8 +23,8 @@ import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.LoadingScreen;
 import nidefawl.qubes.models.*;
+import nidefawl.qubes.models.render.ModelConstants;
 import nidefawl.qubes.models.render.QModelBatchedRender;
-import nidefawl.qubes.render.BatchedRiggedModelRenderer;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
@@ -36,9 +36,9 @@ public class ParticleTextured extends GameBase {
     public final static int MAX_PARTICLES       = 1024*16;
 	
     public final static ShaderBuffer        ssbo_particle_cubes        = new ShaderBuffer("ParticleCube_mat_model")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES);
+            .setSize(ModelConstants.SIZE_OF_MAT4*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_cubes_blockinfo = new ShaderBuffer("ParticleCube_blockinfo")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES);
+            .setSize(ModelConstants.SIZE_OF_VEC4*MAX_PARTICLES);
     
 	static class Particle {
 		boolean dead = false;

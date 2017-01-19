@@ -20,7 +20,7 @@ import nidefawl.qubes.assets.AssetTexture;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.render.BatchedRiggedModelRenderer;
+import nidefawl.qubes.models.render.ModelConstants;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
@@ -32,9 +32,9 @@ public class ParticleTest extends GameBase {
     public final static int MAX_PARTICLES       = 1024*32;
 	
     public final static ShaderBuffer        ssbo_particle_cubes        = new ShaderBuffer("ParticleCube_mat_model")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_MAT4*MAX_PARTICLES);
+            .setSize(ModelConstants.SIZE_OF_MAT4*MAX_PARTICLES);
     public final static ShaderBuffer        ssbo_particle_cubes_blockinfo = new ShaderBuffer("ParticleCube_blockinfo")
-            .setSize(BatchedRiggedModelRenderer.SIZE_OF_VEC4*MAX_PARTICLES);
+            .setSize(ModelConstants.SIZE_OF_VEC4*MAX_PARTICLES);
 	static class Particle {
 		boolean dead = false;
 		int maxLive = 60;
@@ -582,8 +582,8 @@ public class ParticleTest extends GameBase {
 	}
 	
 	void storeParticles(float ftime, int n) {
+		ssbo_particle_cubes.nextFrame();
 		FloatBuffer bufModelMat = ssbo_particle_cubes.getFloatBuffer();
-        bufModelMat.clear();
 		storedSprites = 0;
 		for (int i = 0; i < particles.size(); i++) {
 			Particle cloud = particles.get(i);
@@ -591,8 +591,6 @@ public class ParticleTest extends GameBase {
 				storedSprites+=cloud.store(bufModelMat);
 			}
 		}
-
-		bufModelMat.flip();
         ssbo_particle_cubes.update();
 		
 	}
