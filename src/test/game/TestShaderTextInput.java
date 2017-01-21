@@ -1,34 +1,27 @@
 package test.game;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
 
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.*;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 
-import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.assets.AssetTexture;
-import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.font.*;
 import nidefawl.qubes.gl.*;
-import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.gui.windows.GuiContext;
 import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.input.KeybindManager;
-import nidefawl.qubes.render.post.SMAA;
 import nidefawl.qubes.shader.*;
-import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vec3D;
 
-public class TestShader extends GameBase implements ITextEdit {
+public class TestShaderTextInput extends GameBase implements ITextEdit {
 	final CameraController cameraController = new CameraController();
 	
-	public TestShader() {
+	public TestShaderTextInput() {
 		TICKS_PER_SEC = 20;
 		Engine.initRenderers = false;
 	}
@@ -36,15 +29,22 @@ public class TestShader extends GameBase implements ITextEdit {
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new TestShader().startGame();
+		new TestShaderTextInput().startGame();
 	}
 	private int image;
-	SMAA smaa;
 	FrameBuffer fb2;
-	
-
 	int a = 0;
 	private boolean down;
+	/**
+	 * 
+	 */
+	boolean first = true;
+	private Vec3D tmpPos = new Vec3D();
+	private Shader shaderHeavy;
+	private FontRenderer font;
+	private TextInput text;
+	float lastMx, lastMy;
+	
 	@Override
 	public void onStatsUpdated() {
 		String stats = lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")";
@@ -72,40 +72,69 @@ public class TestShader extends GameBase implements ITextEdit {
 
 	@Override
 	public void render(float f) {
+		this.fb2.bind();
+		this.fb2.clearFrameBuffer();
+		this.shaderHeavy.enable();
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
+		Engine.drawFullscreenQuad();
 		FrameBuffer.unbindFramebuffer();
-        glClearColor(1,1,1,0);
-        glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+		glClearColor(1, 1, 1, 0);
+		glClear(GL11.GL_DEPTH_BUFFER_BIT);
+		Shaders.textured.enable();
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
+		Engine.drawFullscreenQuad();
+		glClear(GL11.GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
-//		this.fb2.bind();
-//		this.fb2.clearFrameBuffer();
-        this.shaderHeavy.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
-        Engine.drawFullscreenQuad();
-//		FrameBuffer.unbindFramebuffer();
+		Engine.setBlend(true);
+//		
+//
+		this.text.width = Math.min(500, displayWidth - 100);
+		this.text.height = displayHeight - 100;
+		this.text.xPos = (int) ((displayWidth-this.text.width)/2.0f);
+		this.text.yPos = 50;
+		Shaders.gui.enable();
+		boolean drawShadow=true;
+		float br = 16;
+		float z = -4;
+		float x = this.text.xPos-br;
+		float y = this.text.yPos-br;
+		float w = this.text.width+2*br;
+		float h = this.text.height+2*br;
+		float alpha = 0.5f;
+		float shadowSigma = 4;
+		float boxSigma = 1f;
+		float round = 4.0f;
+		float r = 0;
+		float g = 0;
+		float b = 0;
 		
-//		glDepthFunc(GL_LEQUAL);
-//        Shaders.textured.enable();
-//        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
-//        Engine.drawFullscreenQuad();
-//        glClear(GL11.GL_DEPTH_BUFFER_BIT);
-//		Shaders.textured.enable();
-//        Engine.setBlend(true);
-//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//        Engine.pxStack.push(50, 50, 50);
-//        this.text.width = Game.displayWidth-100;
-//        this.text.height = Game.displayHeight-100;
-//        this.text.xPos = 50;
-//        this.text.yPos = 50;
-//        this.text.drawStringWithCursor(Mouse.getX(), Mouse.getY(), Mouse.isButtonDown(0));
-//        Engine.pxStack.pop();
+        if (drawShadow) {
+            Shaders.gui.setProgramUniform1f("zpos", z-1);
+            Shaders.gui.setProgramUniform4f("box", x, y+1, x+w, y+h);
+//            Shaders.gui.setProgramUniform4f("color", 1-r, 1-g, 1-b, alpha);
+            Shaders.gui.setProgramUniform4f("color", 0.05f,0.05f,0.05f, alpha);
+            Shaders.gui.setProgramUniform1f("sigma", shadowSigma);
+            Shaders.gui.setProgramUniform1f("corner", round);
+          Engine.enableDepthMask(false);
+            Engine.drawQuad();
+          Engine.enableDepthMask(true);
+        } else {
+            Shaders.gui.setProgramUniform1f("corner", round);
+        }
+        Shaders.gui.setProgramUniform4f("box", x, y, x+w, y+h);
+        Shaders.gui.setProgramUniform1f("zpos", z);
+        Shaders.gui.setProgramUniform4f("color", r, g, b, alpha);
+        Shaders.gui.setProgramUniform1f("sigma", boxSigma);
+        Engine.drawQuad();
+		Shaders.textured.enable();
+//		Engine.pxStack.push(50, 50, 50);
+		this.text.drawStringWithCursor(Mouse.getX(), Mouse.getY(), Mouse.isButtonDown(0));
+//		Engine.pxStack.pop();
+		Engine.setBlend(false);
+		glDisable(GL_DEPTH_TEST);
 	}
 
-	private Vec3D tmpPos = new Vec3D();
-	private Shader shaderHeavy;
-	private Shader shaderTexture;
-	private FontRenderer font;
-	private TextInput text;
-	float lastMx, lastMy;
+
 	private void updateMousePos() {
 		boolean inside = !(Mouse.getX()<0||Mouse.getX()>displayWidth||Mouse.getY()<0||Mouse.getY()>displayHeight);
 		if (!inside) {
@@ -142,42 +171,22 @@ public class TestShader extends GameBase implements ITextEdit {
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
-        	if (smaa != null) {
-        		smaa.releaseAll(EResourceType.FRAMEBUFFER);
-        	}
-        	if (smaa == null) smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM);
-        	smaa.init(displayWidth, displayHeight);
         	if (fb2 != null) {
         		fb2.release();
         	}
             fb2 = new FrameBuffer(displayWidth, displayHeight);
-            fb2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGB16F);
+            fb2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA8);
             fb2.setFilter(GL_COLOR_ATTACHMENT0, GL_LINEAR, GL_LINEAR);
             fb2.setClearColor(GL_COLOR_ATTACHMENT0, 0, 0, 0, 0);
             fb2.setHasDepthAttachment();
             fb2.setup(null);
+    		FrameBuffer.unbindFramebuffer();
         	loadShader();
         }
 	}
-
-	@Override
-	public void updateInput() {
-		super.updateInput();
-
-        if (hasTextHook()!=this.text.focused) {
-            setTextHook(this.text.focused);
-        }
-	}
-	/**
-	 * 
-	 */
-	boolean first = true;
-	private int image2;
+	
 	private void loadShader() {
     	try {
-        	if (this.shaderTexture != null) {
-        		this.shaderTexture.release();
-        	}
 
         	if (this.shaderHeavy != null) {
         		this.shaderHeavy.release();
@@ -192,21 +201,10 @@ public class TestShader extends GameBase implements ITextEdit {
 
         	if (first) {
         		first=false;
+        		ShaderSourceBundle src = this.shaderHeavy.getSource();
+        		ShaderSource fragmentSrc = src.getFragment();
+        		this.text.setEditText(fragmentSrc.getSource());
         	}
-    		ShaderSourceBundle src = this.shaderHeavy.getSource();
-    		ShaderSource fragmentSrc = src.getFragment();
-//    		this.text.setEditText(fragmentSrc.getSource());
-        	this.shaderTexture = AssetManager.getInstance().loadShader(null, "textured", new IShaderDef() {
-				
-				@Override
-				public String getDefinition(String define) {
-					if ("ALPHA_TEST".equals(define))
-						return "#define ALPHA_TEST";
-					return null;
-				}
-			});
-        	this.shaderTexture.enable();
-        	this.shaderTexture.setProgramUniform1i("tex0", 0);
     	} catch (ShaderCompileError e) {
             System.out.println("shader " + e.getName() + " failed to compile");
             System.out.println(e.getLog());
@@ -228,20 +226,15 @@ public class TestShader extends GameBase implements ITextEdit {
 		this.font = FontRenderer.get(0, 12, 0);
 		this.text = new TextInput(this.font, this);
 		this.text.multiline=true;
-		setVSync(false);
+		setVSync(true);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
-		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
-		FrameBuffer.unbindFramebuffer();
-		glEnable(GL_DEPTH_TEST);
-		Engine.setBlend(true);
+//		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
 	}
 
 	@Override
 	public void lateInitGame() {
 		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/tex16.png");
 		this.image = TextureManager.getInstance().makeNewTexture(t, true, true, 0);
-		AssetTexture t2 = AssetManager.getInstance().loadPNGAsset("textures/tex12.png");
-		this.image2 = TextureManager.getInstance().makeNewTexture(t2, true, true, 0);
 	}
 
 	@Override

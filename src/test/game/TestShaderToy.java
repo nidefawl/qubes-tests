@@ -1,0 +1,254 @@
+package test.game;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
+
+import java.util.List;
+
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
+
+import nidefawl.qubes.Game;
+import nidefawl.qubes.GameBase;
+import nidefawl.qubes.assets.AssetManager;
+import nidefawl.qubes.assets.AssetTexture;
+import nidefawl.qubes.font.*;
+import nidefawl.qubes.gl.*;
+import nidefawl.qubes.input.Mouse;
+import nidefawl.qubes.shader.*;
+import nidefawl.qubes.shader.DebugShaders.Var;
+import nidefawl.qubes.texture.TextureManager;
+import nidefawl.qubes.util.*;
+import nidefawl.qubes.vec.Vec3D;
+import nidefawl.qubes.vec.Vector3f;
+import nidefawl.qubes.vr.VR;
+
+public class TestShaderToy extends GameBase implements ITextEdit {
+	final CameraController cameraController = new CameraController();
+    static SimpleResourceManager shaders = new SimpleResourceManager();
+    static SimpleResourceManager newshaders = new SimpleResourceManager();
+	private static boolean startup;
+	private String error;
+
+	public TestShaderToy() {
+		TICKS_PER_SEC = 20;
+		Engine.initRenderers = false;
+	}
+	
+	public static void main(String[] args) {
+        GameContext.setSideAndPath(Side.CLIENT, "../Game/");
+		GameContext.earlyInit();
+		new TestShaderToy().startGame();
+	}
+	private int image;
+	FrameBuffer fb2;
+	int a = 0;
+	private boolean down;
+	/**
+	 * 
+	 */
+	boolean first = true;
+	private Vec3D tmpPos = new Vec3D();
+	private Shader shaderHeavy;
+	private FontRenderer font;
+	float lastMx, lastMy;
+	private String stats = "";
+	int reloadTick;
+	@Override
+	public void onStatsUpdated() {
+		this.stats = String.format("%d FPS (%.2fms)", lastFPS, Stats.avgFrameTime);
+
+
+        String s = String.format("%s - Display %dx%d - Window %dx%d - Gui %dx%d", 
+        		this.stats, 
+        		displayWidth, displayHeight, 
+        		windowWidth, windowHeight, 
+        		guiWidth, guiHeight);
+        setTitle(s);
+
+        reloadTick--;
+		if (reloadTick <= 0) {
+			loadShader();
+//			Shaders.initShaders();
+			reloadTick = 2;
+		}
+	}
+
+	@Override
+	protected void onTextInput(long window, int codepoint) {
+	}
+	
+	@Override
+	public void onMouseClick(long window, int button, int action, int mods) {
+		super.onMouseClick(window, button, action, mods);
+		if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && action == GLFW.GLFW_PRESS) {
+			this.down = true;
+		}
+		if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && action == GLFW.GLFW_RELEASE) {
+			this.down = false;
+		}
+	}
+
+	@Override
+	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
+	}
+
+	@Override
+	public void render(float f) {
+		this.fb2.bind();
+		this.fb2.clearFrameBuffer();
+		this.shaderHeavy.enable();
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
+		Engine.drawFullscreenQuad();
+		FrameBuffer.unbindFramebuffer();
+		List<Var> debugVars = this.shaderHeavy.readDebugVars();
+		glClearColor(1, 1, 1, 0);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		Shaders.textured.enable();
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
+		Engine.drawFullscreenQuad();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		Engine.setBlend(true);
+        int hT = debugVars.size()*18+50;
+        int yT = displayHeight-hT;
+		Shaders.colored.enable();
+		Tess.instance.setColorF(0, 0.7f);
+		Tess.instance.add(600, yT);
+		Tess.instance.add(0, yT);
+		Tess.instance.add(0, yT+hT);
+		Tess.instance.add(600, yT+hT);
+		Tess.instance.drawQuads();
+		Shaders.textured.enable();
+		int y = yT+20;
+		this.font.drawString(this.stats, 10, y, -1, true, 1.0f);
+		y+=26;
+		for (int i = 0; i < debugVars.size(); i++) {
+			this.font.drawString(""+debugVars.get(i), 10, y, -1, true, 1.0f);
+			y+=18;
+		}
+		y+=30;
+		if (this.error != null) {
+			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
+		}
+		Engine.setBlend(false);
+	}
+
+
+	private void updateMousePos() {
+		boolean inside = !(Mouse.getX()<0||Mouse.getX()>displayWidth||Mouse.getY()<0||Mouse.getY()>displayHeight);
+		if (!inside) {
+			down = false;
+		}
+		if (!movement.grabbed()&&down) {
+			lastMx = (float) Mouse.getX();
+			lastMy = (float) Mouse.getY();
+		}
+		this.shaderHeavy.enable();
+		this.shaderHeavy.setProgramUniform4f("iMouse", GameMath.clamp((float)lastMx, 0f, displayWidth), GameMath.clamp(displayHeight-1-(float)lastMy, 0f, displayHeight), down ? 1 : 0, 0);
+
+	}
+	@Override
+	public void preRenderUpdate(float f) {
+
+		this.cameraController.update(movement);
+		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
+		this.tmpPos.scale(f);
+		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
+        Engine.camera.setPosition(this.tmpPos);
+        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+        Engine.updateCamera(Engine.camera.getViewMatrix(), Vector3f.ZERO, false);
+        UniformBuffer.updateUBO(null, f);
+        updateMousePos();
+
+	}
+
+	@Override
+	public void postRenderUpdate(float f) {
+	}
+	
+	@Override
+	public void setRenderResolution(int displayWidth, int displayHeight) {
+        if (isRunning()) {
+            Engine.resize(displayWidth, displayHeight);
+        	if (fb2 != null) {
+        		fb2.release();
+        	}
+            fb2 = new FrameBuffer(displayWidth, displayHeight);
+            fb2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA8);
+            fb2.setFilter(GL_COLOR_ATTACHMENT0, GL_LINEAR, GL_LINEAR);
+            fb2.setClearColor(GL_COLOR_ATTACHMENT0, 0, 0, 0, 0);
+            fb2.setHasDepthAttachment();
+            fb2.setup(null);
+    		FrameBuffer.unbindFramebuffer();
+        	loadShader();
+        }
+	}
+	
+	private void loadShader() {
+        try {
+            AssetManager assetMgr = AssetManager.getInstance();
+            Shader shader = assetMgr.loadShader(newshaders, "debug/shadertoy", "debug/shadertoy", null, null, null);
+            shaders.release();
+            SimpleResourceManager tmp = shaders;
+            shaders = newshaders;
+            newshaders = tmp;
+            this.shaderHeavy = shader;
+        	this.shaderHeavy.enable();
+        	this.shaderHeavy.setProgramUniform1i("iChannel0", 0);
+        	this.shaderHeavy.setProgramUniform1i("iChannel1", 1);
+        	updateMousePos();
+            Shader.disable();
+            this.error = null;
+        } catch (ShaderCompileError e) {
+            newshaders.release();
+            System.out.println("shader " + e.getName() + " failed to compile");
+            System.out.println(e.getLog());
+            this.error="shader " + e.getName() + " failed to compile\n"+e.getLog();
+            if (startup) {
+                throw e;
+            } else {
+            }
+        }
+        startup = false;
+	}
+
+
+	@Override
+	public void tick() {
+		this.cameraController.tickUpdate();
+	}
+
+	@Override
+	public void initGame() {
+        Engine.init();
+		TextureManager.getInstance().init();
+		FontRenderer.init();
+		this.font = FontRenderer.get(0, 12, 0);
+		setVSync(true);
+		GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
+	}
+
+	@Override
+	public void lateInitGame() {
+		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/tex16.png");
+		this.image = TextureManager.getInstance().makeNewTexture(t, true, true, 0);
+	}
+
+	@Override
+	protected void onWheelScroll(long window, double xoffset, double yoffset) {
+		
+	}
+
+	@Override
+	public void submit(TextInput textInput) {
+	}
+
+	@Override
+	public void onEscape(TextInput textInput) {
+	}
+
+}

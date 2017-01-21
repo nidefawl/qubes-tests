@@ -178,6 +178,10 @@ public class SkyboxSpriteTest extends GameBase {
 			case GLFW.GLFW_KEY_2:
 				redraw();
 				break;
+			case GLFW.GLFW_KEY_3:
+				Engine.isDither = !Engine.isDither;
+				System.out.println(Engine.isDither);
+				break;
 			}
 		}
 		if (action == GLFW.GLFW_REPEAT||action == GLFW.GLFW_PRESS) {

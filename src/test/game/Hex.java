@@ -634,7 +634,7 @@ public class Hex extends GameBase {
 			tex[i] = 0xFFBBBBBB;
 		}
 		byte[] rgba = TextureUtil.toBytesRGBA(tex);
-		this.tex = TextureManager.getInstance().makeNewTexture(rgba, 2, 2, true, false, 0);
+		this.tex = TextureManager.getInstance().makeNewTexture(rgba, 2, 2, true, false, 0, GL11.GL_RGBA);
 		updateOffset();
 	}
 
