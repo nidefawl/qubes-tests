@@ -1,7 +1,7 @@
 package test.game;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
 
 import java.util.List;
@@ -19,11 +19,13 @@ import nidefawl.qubes.gl.*;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.shader.DebugShaders.Var;
+import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vec3D;
 import nidefawl.qubes.vec.Vector3f;
 import nidefawl.qubes.vr.VR;
+import test.game.ParticlePerformanceTest2.Particle;
 
 public class TestShaderToy extends GameBase implements ITextEdit {
 	final CameraController cameraController = new CameraController();
@@ -31,6 +33,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
     static SimpleResourceManager newshaders = new SimpleResourceManager();
 	private static boolean startup;
 	private String error;
+    final static Vector3f tmp = new Vector3f();
 
 	public TestShaderToy() {
 		TICKS_PER_SEC = 20;
@@ -66,13 +69,23 @@ public class TestShaderToy extends GameBase implements ITextEdit {
         		displayWidth, displayHeight, 
         		windowWidth, windowHeight, 
         		guiWidth, guiHeight);
+
+		if (VR.getFB(0) != null) {
+
+             s = String.format("%s - Display %dx%d - Window %dx%d - VRFB %dx%d - Gui %dx%d", 
+            		this.stats, 
+            		displayWidth, displayHeight, 
+            		windowWidth, windowHeight, 
+            		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
+            		guiWidth, guiHeight);
+		}
         setTitle(s);
 
         reloadTick--;
 		if (reloadTick <= 0) {
 			loadShader();
 //			Shaders.initShaders();
-			reloadTick = 2;
+			reloadTick = 8;
 		}
 	}
 
@@ -93,44 +106,95 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
 	@Override
 	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
+		if (action == GLFW.GLFW_PRESS) {
+			switch (key) {
+			case GLFW.GLFW_KEY_F1:
+				toggleVR();
+				break;
+			}
+		}
 	}
 
 	@Override
 	public void render(float f) {
-		this.fb2.bind();
-		this.fb2.clearFrameBuffer();
-		this.shaderHeavy.enable();
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
-		Engine.drawFullscreenQuad();
-		FrameBuffer.unbindFramebuffer();
-		List<Var> debugVars = this.shaderHeavy.readDebugVars();
 		glClearColor(1, 1, 1, 0);
 		glClear(GL_DEPTH_BUFFER_BIT);
-		Shaders.textured.enable();
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
-		Engine.drawFullscreenQuad();
-		glClear(GL_DEPTH_BUFFER_BIT);
+
+		Engine.setDefaultViewport();
+		for (int eye = 0; eye < (VR_SUPPORT ? 2 : 1); eye++) {
+			if (VR_SUPPORT) {
+				Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
+				Engine.getMatSceneP().update();
+
+				Engine.updateCamera(VR.getViewMat(eye), Engine.camera.getPosition());
+				UniformBuffer.updateUBO(null, f);
+
+				VR.setViewPort(eye);
+				Engine.checkGLError("setCameraAndViewport");
+				FrameBuffer finalTarget = VR.getFB(eye);
+				finalTarget.bind();
+				finalTarget.clearFrameBuffer();
+			} else {
+				this.fb2.bind();
+				this.fb2.clearFrameBuffer();
+			}
+			this.shaderHeavy.enable();
+			GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
+			Engine.drawFullscreenQuad();
+			if (VR_SUPPORT) {
+				glEnable(GL11.GL_DEPTH_TEST);
+				glDisable(GL11.GL_CULL_FACE);
+				Engine.updateCamera(VR.getPoseMat(eye), Vector3f.ZERO);
+				UniformBuffer.updateUBO(null, f);
+				VR.renderControllers();
+				glEnable(GL11.GL_CULL_FACE);
+				glDisable(GL11.GL_DEPTH_TEST);
+			} else {
+				FrameBuffer.unbindFramebuffer();
+				Shaders.textured.enable();
+				GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
+				Engine.drawFullscreenQuad();
+			}
+		}
+		FrameBuffer.unbindFramebuffer();
+
+		if (VR_SUPPORT) {
+			VR.Submit();
+			if (VR_SUPPORT) {
+				VR.updatePose(f);
+			}
+			Engine.checkGLError("VR.Submit");
+			Game.displayWidth = windowWidth;
+			Game.displayHeight = windowHeight;
+			updateProjection();
+			if (Game.GL_ERROR_CHECKS)
+				Engine.checkGLError("setGUIProjection");
+			VR.drawFullscreenCompanion(windowWidth, windowHeight);
+			Engine.checkGLError("drawFullscreenCompanion");
+		}
+
+		List<Var> debugVars = this.shaderHeavy.readDebugVars();
 		Engine.setBlend(true);
-        int hT = debugVars.size()*18+50;
-        int yT = displayHeight-hT;
+		int hT = debugVars.size() * 18 + 50;
+		int yT = displayHeight - hT;
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);
 		Tess.instance.add(600, yT);
 		Tess.instance.add(0, yT);
-		Tess.instance.add(0, yT+hT);
-		Tess.instance.add(600, yT+hT);
+		Tess.instance.add(0, yT + hT);
+		Tess.instance.add(600, yT + hT);
 		Tess.instance.drawQuads();
 		Shaders.textured.enable();
-		int y = yT+20;
+		int y = yT + 20;
 		this.font.drawString(this.stats, 10, y, -1, true, 1.0f);
-		y+=26;
+		y += 26;
 		for (int i = 0; i < debugVars.size(); i++) {
-			this.font.drawString(""+debugVars.get(i), 10, y, -1, true, 1.0f);
-			y+=18;
+			this.font.drawString("" + debugVars.get(i), 10, y, -1, true, 1.0f);
+			y += 18;
 		}
-		y+=30;
+		y += 30;
 		if (this.error != null) {
-			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
+			this.font.drawString(this.error, Game.displayWidth / 2, 30, 0xff8989, true, 1.0f, 2);
 		}
 		Engine.setBlend(false);
 	}
@@ -152,14 +216,67 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 	@Override
 	public void preRenderUpdate(float f) {
 
-		this.cameraController.update(movement);
+		if (VR_SUPPORT) {
+			tmp.x = VR.pose.m02;
+			tmp.y = VR.pose.m12;
+			tmp.z = VR.pose.m22;
+//			tmp.normalise();
+			boolean b = true;
+			if (b) {
+//				float yaw = 180-(GameMath.atan2(tmp.x, tmp.z)*GameMath.P_180_OVER_PI);
+				VR.pose.toEuler(tmp);
+				float yaw = 180-(tmp.y*GameMath.P_180_OVER_PI);
+				float pitch = (tmp.x*GameMath.P_180_OVER_PI);
+				float forward = VR.getAxis(0, 0, 1)*-0.1f;
+				float strafe = VR.getAxis(0, 0, 0)*0.1f;
+				this.cameraController.update(pitch, yaw, forward, strafe, 0, false);
+			} else {
+				tmp.y = 0;
+				if (tmp.length()>-1e-4F) {
+					tmp.normalise();
+					tmp.scale(-0.1f);
+					float ftmpF = VR.inputStateRefernceArray[0].rAxis[0].y;
+					tmp.scale(ftmpF);
+					this.cameraController.mot.addVec(tmp);
+					tmp.x = VR.pose.m00;
+					tmp.y = VR.pose.m10;
+					tmp.z = VR.pose.m20;
+					tmp.normalise();
+					tmp.scale(0.1f);
+					float ftmpS = VR.inputStateRefernceArray[0].rAxis[0].x;
+					tmp.scale(ftmpS);
+					this.cameraController.mot.addVec(tmp);
+				}
+			}
+		} else {
+			this.cameraController.update(movement);
+		}
+		
 		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
 		this.tmpPos.scale(f);
 		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
         Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-        Engine.updateCamera(Engine.camera.getViewMatrix(), Vector3f.ZERO, false);
+
+		if (VR_SUPPORT) {
+			
+		} else {
+	        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+		}
+		
+        Engine.updateCamera();
+        Engine.getSunLightModel().setTime(5850);
+//        Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
+        Engine.getSunLightModel().updateFrame(f);
+        Engine.setLightPosition(Engine.getSunLightModel().getLightPosition());
         UniformBuffer.updateUBO(null, f);
+//		this.cameraController.update(movement);
+//		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
+//		this.tmpPos.scale(f);
+//		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
+//        Engine.camera.setPosition(this.tmpPos);
+//        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+//        Engine.updateCamera(Engine.camera.getViewMatrix(), Vector3f.ZERO, false);
+//        UniformBuffer.updateUBO(null, f);
         updateMousePos();
 
 	}
@@ -167,7 +284,14 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 	@Override
 	public void postRenderUpdate(float f) {
 	}
-	
+	@Override
+	public void onWindowResize(int displayWidth, int displayHeight) {
+	    if (!VR_SUPPORT||isStarting) {
+	        Game.displayWidth=displayWidth;
+	        Game.displayHeight=displayHeight;
+	        setRenderResolution(displayWidth, displayHeight);
+	    }
+	}
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
@@ -217,7 +341,12 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
 	@Override
 	public void tick() {
-		this.cameraController.tickUpdate();
+		if (!isStarting) {
+			this.cameraController.tickUpdate();
+			if (VR_SUPPORT) {
+				VR.tick();
+			}
+		}
 	}
 
 	@Override
