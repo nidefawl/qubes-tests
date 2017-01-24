@@ -1,21 +1,20 @@
 package test.game;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.*;
 
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryUtil;
 
 import nidefawl.qubes.GameBase;
-import nidefawl.qubes.assets.AssetManager;
-import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.input.KeybindManager;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.render.post.HBAOPlus;
-import nidefawl.qubes.shader.*;
+import nidefawl.qubes.shader.Shaders;
+import nidefawl.qubes.shader.UniformBuffer;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vec3D;

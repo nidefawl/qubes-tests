@@ -2,16 +2,11 @@ package test.game;
 
 import static org.lwjgl.opengl.GL11.*;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 
 import nidefawl.qubes.GameBase;
-import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.gl.Engine;
-import nidefawl.qubes.gl.FrameBuffer;
 import nidefawl.qubes.shader.UniformBuffer;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;

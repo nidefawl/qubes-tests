@@ -1,6 +1,5 @@
 package test.game.meshregion;
 
-import static nidefawl.qubes.meshing.BlockFaceAttr.BLOCK_VERT_INT_SIZE;
 import static org.lwjgl.opengl.EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
@@ -8,20 +7,14 @@ import static org.lwjgl.opengl.GL30.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
-
 import org.lwjgl.opengl.*;
 
-import com.google.common.collect.Lists;
-
-import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.KeybindManager;
-import nidefawl.qubes.input.Mouse;
+import nidefawl.qubes.input.*;
 import nidefawl.qubes.meshing.BlockFaceAttr;
 import nidefawl.qubes.perf.GPUProfiler;
 import nidefawl.qubes.shader.*;

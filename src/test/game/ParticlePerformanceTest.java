@@ -23,7 +23,7 @@ import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.LoadingScreen;
-import nidefawl.qubes.input.KeybindManager;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.models.*;
 import nidefawl.qubes.models.render.ModelConstants;
 import nidefawl.qubes.models.render.QModelBatchedRender;
@@ -412,13 +412,13 @@ public class ParticlePerformanceTest extends GameBase {
     }
 	@Override
 	public void lateInitGame() {
-        loadingScreen.render(0, 0.8f, "Loading... Item Models");
+        loadingScreen.setProgress(0, 0.8f, "Loading... Item Models");
         ItemModelManager.getInstance().reload();
-        loadingScreen.render(0, 0.9f, "Loading... Block Models");
+        loadingScreen.setProgress(0, 0.9f, "Loading... Block Models");
         BlockModelManager.getInstance().reload();
-        loadingScreen.render(0, 1f, "Loading... Entity Models");
+        loadingScreen.setProgress(0, 1f, "Loading... Entity Models");
         EntityModelManager.getInstance().reload();
-        loadingScreen.render(0, 1f, "Loading... Item Textures");
+        loadingScreen.setProgress(0, 1f, "Loading... Item Textures");
         TextureArray[] arrays = {
                 ItemTextureArray.getInstance(),
                 BlockNormalMapArray.getInstance(),
@@ -460,7 +460,7 @@ public class ParticlePerformanceTest extends GameBase {
                 pr+=arrays[i].getProgress();
             }
             pr/=(float)arrays.length;
-            loadingScreen.render(1, pr, "Loading...");
+            loadingScreen.setProgress(1, pr, "Loading...");
         }
 		
 		this.font=FontRenderer.get(0, 22, 0);
@@ -687,52 +687,16 @@ public class ParticlePerformanceTest extends GameBase {
 
 	@Override
 	public void preRenderUpdate(float f) {
-		if (VR_SUPPORT) {
-			tmp.x = VR.pose.m02;
-			tmp.y = VR.pose.m12;
-			tmp.z = VR.pose.m22;
-//			tmp.normalise();
-			boolean b = true;
-			if (b) {
-//				float yaw = 180-(GameMath.atan2(tmp.x, tmp.z)*GameMath.P_180_OVER_PI);
-				VR.pose.toEuler(tmp);
-				float yaw = 180-(tmp.y*GameMath.P_180_OVER_PI);
-				float pitch = (tmp.x*GameMath.P_180_OVER_PI);
-				float forward = VR.getAxis(0, 0, 1)*-0.1f;
-				float strafe = VR.getAxis(0, 0, 0)*0.1f;
-				this.cameraController.update(pitch, yaw, forward, strafe, 0, false);
-			} else {
-				tmp.y = 0;
-				if (tmp.length()>-1e-4F) {
-					tmp.normalise();
-					tmp.scale(-0.1f);
-					float ftmpF = VR.inputStateRefernceArray[0].rAxis[0].y;
-					tmp.scale(ftmpF);
-					this.cameraController.mot.addVec(tmp);
-					tmp.x = VR.pose.m00;
-					tmp.y = VR.pose.m10;
-					tmp.z = VR.pose.m20;
-					tmp.normalise();
-					tmp.scale(0.1f);
-					float ftmpS = VR.inputStateRefernceArray[0].rAxis[0].x;
-					tmp.scale(ftmpS);
-					this.cameraController.mot.addVec(tmp);
-				}
-			}
-		} else {
-			this.cameraController.update(movement);
-		}
-		
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-
-		if (VR_SUPPORT) {
-			
-		} else {
-	        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-		}
+        if (VR_SUPPORT) {
+            this.cameraController.updateVR();
+        } else {
+            this.cameraController.update(movement);
+        }
+        Vector3f renderPos = this.cameraController.getRenderPos(f);
+        Engine.camera.setPosition(renderPos);
+        if (!VR_SUPPORT) {
+            Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+        }
 		
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(5850);
@@ -776,7 +740,7 @@ public class ParticlePerformanceTest extends GameBase {
                 Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
                 Engine.getMatSceneP().update();
                 
-                Engine.updateCamera(VR.getViewMat(eye), Engine.camera.getPosition());
+                Engine.setViewMatrix(VR.getViewMat(eye));
                 UniformBuffer.updateUBO(null, fTime);
                 
                 VR.setViewPort(eye);
@@ -835,8 +799,7 @@ public class ParticlePerformanceTest extends GameBase {
 				
 				glEnable(GL11.GL_DEPTH_TEST);
 				glDisable(GL11.GL_CULL_FACE);
-	            Engine.updateCamera(VR.getPoseMat(eye), Vector3f.ZERO);
-	            UniformBuffer.updateUBO(null, fTime);
+	            Engine.setViewMatrixCameraPos(VR.getPoseMat(eye), Vector3f.ZERO);
 				VR.renderControllers();
 				glEnable(GL11.GL_CULL_FACE);
 				glDisable(GL11.GL_DEPTH_TEST);
@@ -882,7 +845,7 @@ public class ParticlePerformanceTest extends GameBase {
 		Engine.setBlend(false);
 		// Engine.checkGLError("drawAll");
         if (VR_SUPPORT) {
-        	setVRProjection();
+        	setVRViewport();
         }
 	}
 	private void renderParticles(float f) {

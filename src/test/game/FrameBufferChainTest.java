@@ -8,7 +8,6 @@ import org.lwjgl.opengl.GL11;
 
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
-import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;

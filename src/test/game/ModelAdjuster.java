@@ -7,31 +7,24 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL30.*;
 
-import java.util.Stack;
-
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryUtil;
 
 import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
-import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.async.AsyncTasks;
 import nidefawl.qubes.gl.*;
-import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.Gui;
 import nidefawl.qubes.gui.windows.*;
-import nidefawl.qubes.gui.windows.GuiModelAdjustAbstract.GuiModelView;
 import nidefawl.qubes.gui.windows.GuiModelAdjustAbstract.GuiPlayerAdjust;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.models.EntityModel;
 import nidefawl.qubes.models.EntityModelManager;
-import nidefawl.qubes.models.qmodel.*;
 import nidefawl.qubes.models.render.*;
 import nidefawl.qubes.perf.GPUProfiler;
-import nidefawl.qubes.render.post.HBAOPlus;
 import nidefawl.qubes.shader.*;
-import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;

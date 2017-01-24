@@ -12,13 +12,13 @@ import org.lwjgl.opengl.*;
 
 import com.google.common.collect.Lists;
 
-import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.assets.AssetTexture;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.meshing.BlockFaceAttr;
 import nidefawl.qubes.perf.GPUProfiler;
 import nidefawl.qubes.shader.*;

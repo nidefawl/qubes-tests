@@ -15,13 +15,11 @@ import org.lwjgl.opengl.GL13;
 
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
-import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.hex.*;
 import nidefawl.qubes.input.*;
 import nidefawl.qubes.models.qmodel.*;
-import nidefawl.qubes.models.qmodel.loader.ModelLoaderQModel;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.texture.TextureUtil;

@@ -5,8 +5,6 @@ import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.*;
 
-import java.nio.IntBuffer;
-
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
 
@@ -16,13 +14,13 @@ import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;
 import nidefawl.qubes.vr.VR;
-import test.game.CameraController;
 
 public class VRApp extends GameBase {
 	public VRApp() {
@@ -169,8 +167,7 @@ public class VRApp extends GameBase {
             if (VR_SUPPORT) {
                 Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
                 Engine.getMatSceneP().update();
-                Engine.updateCamera(VR.getViewMat(eye), Engine.camera.getPosition());
-                UniformBuffer.updateUBO(null, f);
+                Engine.setViewMatrix(VR.getViewMat(eye));
                 VR.setViewPort(eye);
                 Engine.checkGLError("setCameraAndViewport");
             }
@@ -191,7 +188,7 @@ public class VRApp extends GameBase {
             FrameBuffer.unbindFramebuffer();
             VR.Submit();
             Engine.checkGLError("VR.Submit");
-            setGUIProjection();
+            setGUIViewport();
             Engine.checkGLError("setGUIProjection");
             VR.drawFullscreenCompanion(guiWidth, guiHeight);
             Engine.checkGLError("drawFullscreenCompanion");
@@ -214,7 +211,7 @@ public class VRApp extends GameBase {
 		Engine.setBlend(false);
 		Engine.checkGLError("drawGUI");
         if (VR_SUPPORT) {
-        	setVRProjection();
+        	setVRViewport();
         }
 	}
 

@@ -16,10 +16,10 @@ import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.assets.AssetTexture;
 import nidefawl.qubes.font.*;
 import nidefawl.qubes.gl.*;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.shader.DebugShaders.Var;
-import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vec3D;
@@ -126,8 +126,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 				Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
 				Engine.getMatSceneP().update();
 
-				Engine.updateCamera(VR.getViewMat(eye), Engine.camera.getPosition());
-				UniformBuffer.updateUBO(null, f);
+                Engine.setViewMatrix(VR.getViewMat(eye));
 
 				VR.setViewPort(eye);
 				Engine.checkGLError("setCameraAndViewport");
@@ -144,8 +143,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 			if (VR_SUPPORT) {
 				glEnable(GL11.GL_DEPTH_TEST);
 				glDisable(GL11.GL_CULL_FACE);
-				Engine.updateCamera(VR.getPoseMat(eye), Vector3f.ZERO);
-				UniformBuffer.updateUBO(null, f);
+	            Engine.setViewMatrixCameraPos(VR.getPoseMat(eye), Vector3f.ZERO);
 				VR.renderControllers();
 				glEnable(GL11.GL_CULL_FACE);
 				glDisable(GL11.GL_DEPTH_TEST);
@@ -215,39 +213,8 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 	}
 	@Override
 	public void preRenderUpdate(float f) {
-
 		if (VR_SUPPORT) {
-			tmp.x = VR.pose.m02;
-			tmp.y = VR.pose.m12;
-			tmp.z = VR.pose.m22;
-//			tmp.normalise();
-			boolean b = true;
-			if (b) {
-//				float yaw = 180-(GameMath.atan2(tmp.x, tmp.z)*GameMath.P_180_OVER_PI);
-				VR.pose.toEuler(tmp);
-				float yaw = 180-(tmp.y*GameMath.P_180_OVER_PI);
-				float pitch = (tmp.x*GameMath.P_180_OVER_PI);
-				float forward = VR.getAxis(0, 0, 1)*-0.1f;
-				float strafe = VR.getAxis(0, 0, 0)*0.1f;
-				this.cameraController.update(pitch, yaw, forward, strafe, 0, false);
-			} else {
-				tmp.y = 0;
-				if (tmp.length()>-1e-4F) {
-					tmp.normalise();
-					tmp.scale(-0.1f);
-					float ftmpF = VR.inputStateRefernceArray[0].rAxis[0].y;
-					tmp.scale(ftmpF);
-					this.cameraController.mot.addVec(tmp);
-					tmp.x = VR.pose.m00;
-					tmp.y = VR.pose.m10;
-					tmp.z = VR.pose.m20;
-					tmp.normalise();
-					tmp.scale(0.1f);
-					float ftmpS = VR.inputStateRefernceArray[0].rAxis[0].x;
-					tmp.scale(ftmpS);
-					this.cameraController.mot.addVec(tmp);
-				}
-			}
+			this.cameraController.updateVR();
 		} else {
 			this.cameraController.update(movement);
 		}

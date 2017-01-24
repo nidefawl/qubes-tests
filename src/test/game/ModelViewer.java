@@ -22,6 +22,7 @@ import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.Gui;
 import nidefawl.qubes.gui.windows.GuiWindow;
 import nidefawl.qubes.gui.windows.GuiWindowManager;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.models.EntityModel;
 import nidefawl.qubes.models.EntityModelManager;

@@ -6,7 +6,6 @@ import nidefawl.qubes.gl.*;
 import static org.lwjgl.opengl.NVVertexBufferUnifiedMemory.*;
 import static org.lwjgl.opengl.NVShaderBufferLoad.*;
 import nidefawl.qubes.meshing.BlockFaceAttr;
-import nidefawl.qubes.util.GameError;
 
 public class MeshListInterleavedNV_Half extends MeshList {
 

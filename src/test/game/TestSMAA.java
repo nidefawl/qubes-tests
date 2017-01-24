@@ -12,6 +12,7 @@ import nidefawl.qubes.assets.AssetTexture;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.render.post.SMAA;
 import nidefawl.qubes.shader.*;

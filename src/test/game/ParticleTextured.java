@@ -22,6 +22,7 @@ import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.gui.LoadingScreen;
+import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.models.*;
 import nidefawl.qubes.models.render.ModelConstants;
 import nidefawl.qubes.models.render.QModelBatchedRender;
@@ -282,13 +283,13 @@ public class ParticleTextured extends GameBase {
 	@Override
 	public void lateInitGame() {
 
-        loadingScreen.render(0, 0.8f, "Loading... Item Models");
+        loadingScreen.setProgress(0, 0.8f, "Loading... Item Models");
         ItemModelManager.getInstance().reload();
-        loadingScreen.render(0, 0.9f, "Loading... Block Models");
+        loadingScreen.setProgress(0, 0.9f, "Loading... Block Models");
         BlockModelManager.getInstance().reload();
-        loadingScreen.render(0, 1f, "Loading... Entity Models");
+        loadingScreen.setProgress(0, 1f, "Loading... Entity Models");
         EntityModelManager.getInstance().reload();
-        loadingScreen.render(0, 1f, "Loading... Item Textures");
+        loadingScreen.setProgress(0, 1f, "Loading... Item Textures");
         TextureArray[] arrays = {
                 ItemTextureArray.getInstance(),
                 BlockNormalMapArray.getInstance(),
@@ -330,7 +331,7 @@ public class ParticleTextured extends GameBase {
                 pr+=arrays[i].getProgress();
             }
             pr/=(float)arrays.length;
-            loadingScreen.render(1, pr, "Loading...");
+            loadingScreen.setProgress(1, pr, "Loading...");
         }
 		
 		this.font=FontRenderer.get(0, 22, 0);

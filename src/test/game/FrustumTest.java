@@ -7,15 +7,11 @@ import static org.lwjgl.opengl.GL30.*;
 
 import org.lwjgl.opengl.*;
 
-import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
-import nidefawl.qubes.config.WorkingEnv;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
-import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.input.KeybindManager;
-import nidefawl.qubes.render.region.MeshedRegion;
+import nidefawl.qubes.input.*;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
@@ -114,20 +110,24 @@ public class FrustumTest extends GameBase {
         Engine.bindVAO(GLVAO.vaoModel);
         Engine.bindBuffer(this.buf.getVbo());
         Engine.bindIndexBuffer(this.buf.getVboIndices());
+        int nRendered = 0;
 		for (int i = -k; i <= k; i++) {
 			for (int j = -k; j <= k; j++) {
+				int nSphere = (i+k)+(j+k)*(k*2+1);
 				tmp.set(i*r, 0, j*r);
 				int nn = Engine.camFrustum.sphereInFrustum(tmp, 2);
 				if (nn > -1) {
 					Engine.pxStack.setTranslation(i*r, 0, j*r);	
 			        this.buf.drawElements();
+					nRendered++;
 				} else{
-//					System.out.println("out "+nn);
+//					System.out.println(nSphere+" frustum result "+nn);
 				}
 						
 
 			}
 		}
+		System.out.println(nRendered);
 		Engine.pxStack.pop();
 		
 		FrameBuffer.unbindFramebuffer();
@@ -152,6 +152,7 @@ public class FrustumTest extends GameBase {
         Engine.camera.setPosition(this.tmpPos);
         Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
         Engine.updateCamera();
+        Engine.updateFrustumFromInternal();
         UniformBuffer.updateUBO(null, f);
 	}
 
