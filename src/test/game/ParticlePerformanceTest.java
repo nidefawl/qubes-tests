@@ -216,7 +216,6 @@ public class ParticlePerformanceTest extends GameBase {
     public ParticlePerformanceTest() {
 		useWindowSizeAsRenderResolution = false;
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 		Engine.znear = 0.1f;
 		Engine.zfar = 512.0f;
 	}
@@ -276,7 +275,6 @@ public class ParticlePerformanceTest extends GameBase {
 	@Override
 	public void initGame() {
 		GameBase.loadingScreen = new LoadingScreen();
-		QModelBatchedRender.isModelViewer = true;
         Engine.init();
 		TextureManager.getInstance().init();
         EntityModel.preInit();

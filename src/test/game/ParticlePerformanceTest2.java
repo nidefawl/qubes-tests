@@ -14,8 +14,10 @@ import org.lwjgl.opengl.*;
 import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
+import nidefawl.qubes.assets.RenderAssets;
 import nidefawl.qubes.async.AsyncTask;
 import nidefawl.qubes.async.AsyncTasks;
+import nidefawl.qubes.config.RenderSettings;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
@@ -195,7 +197,6 @@ public class ParticlePerformanceTest2 extends GameBase {
     public ParticlePerformanceTest2() {
 		useWindowSizeAsRenderResolution = false;
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 		Engine.znear = 0.1f;
 		Engine.zfar = 512.0f;
 	}
@@ -252,6 +253,7 @@ public class ParticlePerformanceTest2 extends GameBase {
 
 	private VertexBuffer bufferDataFace;
 	private int drawCalls;
+	private RenderSettings renderSettings = new RenderSettings();
 
 
 
@@ -262,7 +264,6 @@ public class ParticlePerformanceTest2 extends GameBase {
 	@Override
 	public void initGame() {
 		GameBase.loadingScreen = new LoadingScreen();
-		QModelBatchedRender.isModelViewer = true;
         Engine.init();
 		TextureManager.getInstance().init();
         EntityModel.preInit();
@@ -309,7 +310,7 @@ public class ParticlePerformanceTest2 extends GameBase {
                     return null;
                 }
             });
-            Shader skybox = assetMgr.loadShader(newshaders, "sky/clouds");
+            Shader skybox = assetMgr.loadShader(newshaders, "sky/skybox_generate");
             shaders.release();
             SimpleResourceManager tmp = shaders;
             shaders = newshaders;
@@ -352,56 +353,8 @@ public class ParticlePerformanceTest2 extends GameBase {
     }
 	@Override
 	public void lateInitGame() {
-        loadingScreen.setProgress(0, 0.8f, "Loading... Item Models");
-        ItemModelManager.getInstance().reload();
-        loadingScreen.setProgress(0, 0.9f, "Loading... Block Models");
-        BlockModelManager.getInstance().reload();
-        loadingScreen.setProgress(0, 1f, "Loading... Entity Models");
-        EntityModelManager.getInstance().reload();
-        loadingScreen.setProgress(0, 1f, "Loading... Item Textures");
-        TextureArray[] arrays = {
-//                ItemTextureArray.getInstance(),
-//                BlockNormalMapArray.getInstance(),
-                BlockTextureArray.getInstance(),
-        };
-        for (int i = 0; i < arrays.length; i++) {
-            final TextureArray arr = arrays[i];
-            AsyncTasks.submit(new AsyncTask() {
-                @Override
-                public void pre() {
-                    try {
-                        arr.preUpdate();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                @Override
-                public void post() {
-                    arr.postUpdate();
-                }
-                @Override
-                public Void call() throws Exception {
-                    try {
-                        arr.load();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-                @Override
-                public TaskType getType() {
-                    return TaskType.LOAD_TEXTURES;
-                }
-            });
-        }
-        while(!AsyncTasks.completeTasks()) {
-            float pr = 0;
-            for (int i = 0; i < arrays.length; i++) {
-                pr+=arrays[i].getProgress();
-            }
-            pr/=(float)arrays.length;
-            loadingScreen.setProgress(1, pr, "Loading...");
-        }
+
+        RenderAssets.load(this.renderSettings, loadingScreen);
 		
 		this.font=FontRenderer.get(0, 22, 0);
 		cubeFormat1 = new GLTriBuffer(GL15.GL_STREAM_DRAW);

@@ -35,7 +35,6 @@ public class Hex extends GameBase {
 	boolean ortho = true;
 	public Hex() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");

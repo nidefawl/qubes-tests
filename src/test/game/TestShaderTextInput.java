@@ -24,7 +24,6 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
 	
 	public TestShaderTextInput() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	
 	public static void main(String[] args) {

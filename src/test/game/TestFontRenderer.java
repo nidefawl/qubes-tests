@@ -27,7 +27,6 @@ public class TestFontRenderer extends GameBase {
 
 	public TestFontRenderer() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");

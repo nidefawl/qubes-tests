@@ -37,7 +37,6 @@ public class SkyboxSpriteTest extends GameBase {
     public FrameBuffer  fbSkybox;
 	public SkyboxSpriteTest() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -56,15 +55,13 @@ public class SkyboxSpriteTest extends GameBase {
 	GLVBO vboIdx;
 
 
-	Shader spriteShader;
+	Shader shaderParticleClouds;
 	Shader shaderDeferred;
 
-	public Shader skyShader;
-	public Shader cloudsShader;
-	private Shader skybox;
+	public Shader shaderDrawSkybox;
+	public Shader shaderDrawSkyboxScene;
+	private Shader shaderSampleCubemap;
 
-	private TesselatorState skybox1;
-	private TesselatorState skybox2;
 
 	public Vector3f skyColor = new Vector3f(0.34f, 0.54f, 0.96f);
 	public Vector3f fogColor = new Vector3f(0.34f, 0.54f, 0.96f);
@@ -75,9 +72,18 @@ public class SkyboxSpriteTest extends GameBase {
     public void initShaders() {
         try {
             AssetManager assetMgr = AssetManager.getInstance();
-            Shader particle = assetMgr.loadShader(newshaders, "particle/pointsprite");
-            Shader cloudsShader = assetMgr.loadShader(newshaders, "sky/clouds");
-            Shader skybox = assetMgr.loadShader(newshaders, "sky/skybox_cubemap");
+            Shader new_particle_clouds = assetMgr.loadShader(newshaders, "particle/clouds");
+            Shader new_skybox_generate = assetMgr.loadShader(newshaders, "sky/skybox_generate");
+            Shader new_skybox_draw_scene = assetMgr.loadShader(newshaders, "sky/skybox_generate", new IShaderDef() {
+                @Override
+                public String getDefinition(String define) {
+                    if ("RENDER_TO_SCENE_FB".equals(define)) {
+                        return "#define RENDER_TO_SCENE_FB 1";
+                    }
+                    return null;
+                }
+            });
+            Shader new_sample_cubemap = assetMgr.loadShader(newshaders, "sky/skybox_sample_cubemap");
 //            Shader cloudsShader = assetMgr.loadShader(newshaders, "sky/sky");
             Shader new_deferred = assetMgr.loadShader(newshaders, "post/deferred", new IShaderDef() {
                 @Override
@@ -88,16 +94,15 @@ public class SkyboxSpriteTest extends GameBase {
                     return null;
                 }
             });
-            Shader sky = assetMgr.loadShader(newshaders, "sky/sky");
             shaders.release();
             SimpleResourceManager tmp = shaders;
             shaders = newshaders;
             newshaders = tmp;
             shaderDeferred = new_deferred;
-            skyShader = sky;
-            this.skybox = skybox;
-            this.cloudsShader = cloudsShader;
-            spriteShader = particle;
+            this.shaderSampleCubemap = new_sample_cubemap;
+            this.shaderDrawSkybox = new_skybox_generate;
+            this.shaderDrawSkyboxScene = new_skybox_draw_scene;
+            this.shaderParticleClouds = new_particle_clouds;
             this.shaderDeferred.enable();
             shaderDeferred.setProgramUniform1i("texColor", 0);
             shaderDeferred.setProgramUniform1i("texNormals", 1);
@@ -108,10 +113,12 @@ public class SkyboxSpriteTest extends GameBase {
             shaderDeferred.setProgramUniform1i("texBlockLight", 6);
             shaderDeferred.setProgramUniform1i("texAO", 7);
 
-            spriteShader.enable();
-            spriteShader.setProgramUniform1i("tex0", 0);
-            cloudsShader.enable();
-            cloudsShader.setProgramUniform1i("tex0", 0);
+            shaderParticleClouds.enable();
+            shaderParticleClouds.setProgramUniform1i("tex0", 0);
+            new_skybox_generate.enable();
+            new_skybox_generate.setProgramUniform1i("tex0", 0);
+            new_skybox_draw_scene.enable();
+            new_skybox_draw_scene.setProgramUniform1i("tex0", 0);
             Shader.disable();
             this.error = null;
         } catch (ShaderCompileError e) {
@@ -210,39 +217,38 @@ public class SkyboxSpriteTest extends GameBase {
     final static Vector3f tmp = new Vector3f();
 	@Override
 	public void render(float f) {
-		
 		Engine.enableDepthMask(false);
+		glDisable(GL11.GL_DEPTH_TEST);
+		Engine.setBlend(false);
+		
 		if (renderIntoCubemap) {
-			glDisable(GL11.GL_DEPTH_TEST);
 			UniformBuffer.uboMatrix3D_Temp.bind();
 			this.fbSkybox.bind();
 	        Engine.setViewport(0, 0, SKYBOX_RES, SKYBOX_RES);
 			for (int c = 0; c < 6; c++) {
 				this.fbSkybox.bindCubeMapFace(c);
 		        cubeMatrix.setupScene(c, Engine.camera.getPosition());
-		        renderSky(f);
+		        renderSky(f, false);
 			}
 			Engine.setDefaultViewport();
 			
 			UniformBuffer.uboMatrix3D.bind();
-			
-			Engine.enableDepthMask(true);
-			glEnable(GL11.GL_DEPTH_TEST);
 		}
 		
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
+		Engine.getSceneFB().setDrawAll();
 		if (renderIntoCubemap) {
-			skybox.enable();
+			this.shaderSampleCubemap.enable();
 	        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_CUBE_MAP, this.fbSkybox.getTexture(0));
-			Engine.drawFullscreenQuad();
+			Engine.drawFSTri();
 		}
-		
-		glDisable(GL11.GL_DEPTH_TEST);
+//		
 		if (!renderIntoCubemap) {
-			renderSky(f);
+			renderSky(f, true);
 		}
-		
+//		
+		glDisable(GL11.GL_DEPTH_TEST);
 		Engine.checkGLError("Pass0");
 		fbDeferred.bind();
 		fbDeferred.clearFrameBuffer();
@@ -255,7 +261,7 @@ public class SkyboxSpriteTest extends GameBase {
 		GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty()); // LIGHTCOMPUTE
 		GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
 		GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SSAO
-		Engine.drawFullscreenQuad();
+		Engine.drawFSTri();
 		FrameBuffer.unbindFramebuffer();
 		glClearColor(0, 0, 0, 0);
 		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
@@ -263,32 +269,41 @@ public class SkyboxSpriteTest extends GameBase {
 		Shaders.tonemap.setProgramUniform1f("constexposure", 30);
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
 		Engine.drawFullscreenQuad();
+		Shaders.textured.enable();
 
 	}
 
-	private void renderSky(float f) {
-		Engine.setBlend(false);
+	private void renderSky(float f, boolean directScene) {
+		//blending on the clouds will differ with direct rendering as colors are multiplied at different ranges (post hdr vs pre hdr)
+		//this is not an issue, I dont want to write a second code path for direct rendering
+		//this code is just for testing purposes
+		//and the actual skybox without clouds is fully identical
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texNoise);
-		cloudsShader.enable();
-		cloudsShader.setProgramUniform1f("rainStrength", WEATHER);
-		cloudsShader.setProgramUniform1i("worldTime", TIME);
+		Shader skyDraw = directScene ? shaderDrawSkyboxScene : shaderDrawSkybox;
+		skyDraw.enable();
+		skyDraw.setProgramUniform1f("rainStrength", WEATHER);
+		skyDraw.setProgramUniform1i("worldTime", TIME);
 		if (GPUProfiler.PROFILING_ENABLED) {
 			GPUProfiler.start("clouds");
 		}
-		Engine.drawFullscreenQuad();
+		Engine.drawFSTri();
 		if (GPUProfiler.PROFILING_ENABLED) {
 			GPUProfiler.end();
 		}
 
-
+//
+		if (directScene) {
+			sceneFB.setDrawMask(1);
+		}
 		Engine.setBlend(true);
 //        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        spriteShader.enable();
+//        glBlendFunc(GL11.GL_ONE, GL11.GL_ONE);
+        shaderParticleClouds.enable();
 		float weatherStr = (WEATHER);
 		weatherStr = GameMath.powf(weatherStr*0.9f, 1.6f);
-		spriteShader.setProgramUniform1f("spritebrightness", weatherStr);
-        spriteShader.setProgramUniform1f("transparency", 0.4f-weatherStr*0.1f);
+		float hdrMult = directScene ? 0.02f : 1.0f;
+		shaderParticleClouds.setProgramUniform1f("spritebrightness", 32*(0.1f+weatherStr*0.9f)*hdrMult);
+        shaderParticleClouds.setProgramUniform1f("transparency", 0.4f-weatherStr*0.1f);
 //      int nSprites = (int) GameMath.clamp(Math.round(this.totalSprites*(WEATHER*0.7f+0.3f)), 0, this.totalSprites);
         GL30.glBindVertexArray(vaoPos);
         for (int i = 0; i < this.texClouds.length; i++) {
@@ -297,7 +312,6 @@ public class SkyboxSpriteTest extends GameBase {
             GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.texClouds[i]);
             GL31.glDrawElementsInstanced(GL11.GL_TRIANGLES, 6, GL11.GL_UNSIGNED_INT, 0, this.storedSprites);
         }
-        GL30.glBindVertexArray(0);
         Engine.bindVAO(null);
 		Engine.setBlend(false);
 	}
@@ -468,45 +482,6 @@ public class SkyboxSpriteTest extends GameBase {
 		
 	
 		
-		
-
-        Tess tesselator = Tess.instance;
-        int scale = (int) (Engine.zfar / 1.43F);
-        int x = -scale;
-        int y = -scale / 16;
-        int z = -scale;
-        int x2 = scale;
-        int y2 = scale / 16;
-        int z2 = scale;
-        int rgbai = 0;
-        rgbai = ((int) (fogColor.x * 255.0F)) << 16 | ((int) (fogColor.y * 255.0F)) << 8 | ((int) (fogColor.z * 255.0F));
-        //      Shaders.colored.enable();
-        tesselator.setColor(rgbai, 255);
-        tesselator.add(x, y2, z);
-        tesselator.add(x, y, z);
-        tesselator.add(x2, y2, z);
-        tesselator.add(x2, y, z);
-        tesselator.add(x2, y2, z2);
-        tesselator.add(x2, y, z2);
-        tesselator.add(x, y2, z2);
-        tesselator.add(x, y, z2);
-        tesselator.add(x, y2, z);
-        tesselator.add(x, y, z);
-        tesselator.draw(GL_QUAD_STRIP, skybox1);
-        //      tesselator.draw(GL_TRIANGLE_STRIP);
-
-        rgbai = ((int) (skyColor.x * 255.0F)) << 16 | ((int) (skyColor.y * 255.0F)) << 8 | ((int) (skyColor.z * 255.0F));
-        tesselator.setColor(-1, 255);
-        tesselator.add(x, y, z2);
-        tesselator.add(x2, y, z2);
-        tesselator.add(x2, y, z);
-        tesselator.add(x, y, z);
-        tesselator.add(x, y2, z);
-        tesselator.add(x2, y2, z);
-        tesselator.add(x2, y2, z2);
-        tesselator.add(x, y2, z2);
-        //    tesselator.draw(GL_TRIANGLES);
-        tesselator.draw(GL_QUADS, skybox2);
 	}
 	private void buildQuad(VertexBuffer vertexBuf) {
         vertexBuf.put(Half.fromFloat(0) << 16 | Half.fromFloat(1));
@@ -586,16 +561,16 @@ public class SkyboxSpriteTest extends GameBase {
 		    renderRot = lastRot+(rot-lastRot)*f;
 		    Vector3f.interp(lastCol, col, f, renderCol);
 		    this.renderPos.set(this.posOffset);
-		    {
-			    float f2 = (tick+f+xoffset)/15520.0f;
-			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
-			    posOffset.x += 0.0001f*GameMath.sin(f2);
-		    }
-		    {
-			    float f2 = (tick+f+yoffset)/21220.0f;
-			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
-			    posOffset.y += 0.0001f*GameMath.sin(f2);
-		    }
+//		    {
+//			    float f2 = (tick+f+xoffset)/15520.0f;
+//			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
+//			    posOffset.x += 0.0001f*GameMath.sin(f2);
+//		    }
+//		    {
+//			    float f2 = (tick+f+yoffset)/21220.0f;
+//			    f2 = (f2*GameMath.PI)%GameMath.PI*2;
+//			    posOffset.y += 0.0001f*GameMath.sin(f2);
+//		    }
 		    
 		}
 
@@ -618,8 +593,6 @@ public class SkyboxSpriteTest extends GameBase {
 	@Override
 	public void lateInitGame() {
 		this.font=FontRenderer.get(0, 22, 0);
-		skybox1 = new TesselatorState(GL15.GL_STATIC_DRAW);
-		skybox2 = new TesselatorState(GL15.GL_STATIC_DRAW);
 		this.bufMat = Memory.createByteBufferAligned(64, 16*4*MAX_SPRITES);
 		this.bufMatFloat = this.bufMat.asFloatBuffer();
 		this.vertexUploadDirectBuf = new ReallocIntBuffer();

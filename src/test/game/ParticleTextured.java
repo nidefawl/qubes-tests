@@ -161,7 +161,6 @@ public class ParticleTextured extends GameBase {
     final static Vector3f tmp = new Vector3f();
 	public ParticleTextured() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -214,7 +213,6 @@ public class ParticleTextured extends GameBase {
 	@Override
 	public void initGame() {
 		GameBase.loadingScreen = new LoadingScreen();
-		QModelBatchedRender.isModelViewer = true;
         Engine.init();
 		TextureManager.getInstance().init();
         EntityModel.preInit();

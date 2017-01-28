@@ -18,7 +18,6 @@ public class FrameBufferChainTest extends GameBase {
 	SimpleResourceManager resMgr = new SimpleResourceManager();
 	public FrameBufferChainTest() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -29,7 +28,6 @@ public class FrameBufferChainTest extends GameBase {
 	public final static int NUM_FRAMEBUFFERS = 64; 
 	private int ticks;
 	private Shader shader;
-	private Shader shader2;
 	FrameBuffer buffers[] = new FrameBuffer[NUM_FRAMEBUFFERS];
 	
 
@@ -59,14 +57,9 @@ public class FrameBufferChainTest extends GameBase {
 		try {
 			resMgr.release();
 			Shader shader = AssetManager.getInstance().loadShader(resMgr, "debug/test");
-			Shader shader2 = AssetManager.getInstance().loadShader(resMgr, "sky/skybox");
 			this.shader = shader;
-			this.shader2 = shader2;
 			this.shader.enable();
 			this.shader.setProgramUniform1i("tex0", 0);
-			this.shader2.enable();
-			this.shader2.setProgramUniform1i("tex0", 0);
-			this.shader2.setProgramUniform1f("lightIntens", 1);
 			Shader.disable();
 		} catch (ShaderCompileError e) {
             System.out.println("shader " + e.getName() + " failed to compile");

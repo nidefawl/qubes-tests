@@ -135,7 +135,6 @@ public class ParticleTest extends GameBase {
     final static Vector3f tmp = new Vector3f();
     public ParticleTest() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -493,7 +492,7 @@ public class ParticleTest extends GameBase {
 		GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty()); // LIGHTCOMPUTE
 		GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
 		GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); // SSAO
-		Engine.drawFullscreenQuad();
+		Engine.drawFSTri();
 		
 		FrameBuffer.unbindFramebuffer();
 

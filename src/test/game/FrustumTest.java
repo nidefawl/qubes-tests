@@ -24,7 +24,6 @@ public class FrustumTest extends GameBase {
 	private FrameBuffer sceneFB;
 	public FrustumTest() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -131,7 +130,7 @@ public class FrustumTest extends GameBase {
 		Engine.pxStack.pop();
 		
 		FrameBuffer.unbindFramebuffer();
-        GLDebugTextures.readTexture("Pass0", "texColor", Engine.getSceneFB().getTexture(0));
+        GLDebugTextures.readTexture(false, "Pass0", "texColor", Engine.getSceneFB().getTexture(0));
         Engine.checkGLError("Pass0");
         glClearColor(0,0,0,0);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);

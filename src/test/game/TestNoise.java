@@ -35,11 +35,9 @@ public class TestNoise extends GameBase {
 	private static boolean startup;
 	public TestNoise() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new TestNoise().startGame();

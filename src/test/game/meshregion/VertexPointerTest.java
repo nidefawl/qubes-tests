@@ -38,11 +38,9 @@ public class VertexPointerTest extends GameBase {
 
 	public VertexPointerTest() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new VertexPointerTest().startGame();
@@ -226,11 +224,11 @@ public class VertexPointerTest extends GameBase {
 
 		FrameBuffer.unbindFramebuffer();
 		String name = "Pass0";
-        GLDebugTextures.readTexture(name, "texColor", Engine.getSceneFB().getTexture(0));
-        GLDebugTextures.readTexture(name, "texNormals", Engine.getSceneFB().getTexture(1));
-        GLDebugTextures.readTexture(name, "texMaterial", Engine.getSceneFB().getTexture(2));
-        GLDebugTextures.readTexture(name, "blocklight", Engine.getSceneFB().getTexture(3));
-        GLDebugTextures.readTexture(name, "texDepth", Engine.getSceneFB().getDepthTex(), 2);
+        GLDebugTextures.readTexture(false, name, "texColor", Engine.getSceneFB().getTexture(0));
+        GLDebugTextures.readTexture(false, name, "texNormals", Engine.getSceneFB().getTexture(1));
+        GLDebugTextures.readTexture(false, name, "texMaterial", Engine.getSceneFB().getTexture(2));
+        GLDebugTextures.readTexture(false, name, "blocklight", Engine.getSceneFB().getTexture(3));
+        GLDebugTextures.readTexture(false, name, "texDepth", Engine.getSceneFB().getDepthTex(), 2);
         Engine.checkGLError("Pass0");
         fbDeferred.bind();
         fbDeferred.clearFrameBuffer();
@@ -245,7 +243,7 @@ public class VertexPointerTest extends GameBase {
         GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); //SSAO
         Engine.drawFullscreenQuad();
 		FrameBuffer.unbindFramebuffer();
-        GLDebugTextures.readTexture("Deferred", "Output", fbDeferred.getTexture(0));
+        GLDebugTextures.readTexture(true, "Deferred", "Output", fbDeferred.getTexture(0));
         glClearColor(0,0,0,0);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         Shaders.tonemap.enable();

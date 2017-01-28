@@ -37,7 +37,6 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
 	public TestShaderToy() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	
 	public static void main(String[] args) {

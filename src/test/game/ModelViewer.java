@@ -4,14 +4,13 @@
 package test.game;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 
 import java.util.Stack;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
-import org.lwjgl.system.MemoryUtil;
 
 import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
@@ -34,27 +33,19 @@ import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
-import nidefawl.qubes.vec.*;
+import nidefawl.qubes.vec.Matrix4f;
+import nidefawl.qubes.vec.Vector3f;
 
 /**
  * @author Michael Hept 2015
  * Copyright: Michael Hept
  */
 public class ModelViewer extends GameBase {
-	final CameraController cameraController = new CameraController();
-	private FrameBuffer buf;
-	private FrameBuffer sceneFB;
-	private TesselatorState tessState;
-	Shader shaderModelSingle;
-	Shader shaderDeferred;
-    int action = 0;
-    Gui gui = null;
-    boolean wasGrabbed = true;
-    public static ModelViewer instance;
+    static SimpleResourceManager shaders = new SimpleResourceManager();
+    static SimpleResourceManager newshaders = new SimpleResourceManager();
+	private static boolean startup;
     public ModelViewer() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = true;
-		QModelBatchedRender.isModelViewer = true;
 		Gui.FONT_SIZE_WINDOW_TITLE = 16;
 		Gui.FONT_SIZE_BUTTON = 14;
 	}
@@ -63,53 +54,44 @@ public class ModelViewer extends GameBase {
 		GameContext.earlyInit();
 		Gui.FONT_SIZE_WINDOW_TITLE = 16;
 		Gui.FONT_SIZE_BUTTON = 14;
-		instance = new ModelViewer();
-		instance.startGame();
+		new ModelViewer().startGame();
 	}
 	
 
-	int tick = 0;
-//	private ModelQModel model2;
-    static SimpleResourceManager shaders = new SimpleResourceManager();
-    static SimpleResourceManager newshaders = new SimpleResourceManager();
-	private static boolean startup;
+	final CameraController cameraController = new CameraController();
+	private TesselatorState tessState;
+	Shader shaderModelSingle;
+    Gui gui = null;
+    boolean wasGrabbed = true;
+	int reloadtick = 0;
+	public boolean showNormals;
+	public boolean showBones;
+	public boolean showWireframe;
+	public boolean renderBatchedMode=true;
+	EntityModel entityModel;
+	int modelidx = 0;
+    boolean once = false;
+
+	QModelBatchedRender renderBatched;
+	QModelRender renderSingle;
+	QModelRender curRender = null;
+	public QModelProperties config = new QModelProperties();
+	private boolean showDbg=true;
 	
-//	public static String[] models = {
-//			"male", "female", "archer", "cat", "chicken", "cow", "dog", "duck", "pig", "pony", "puppy", "sheep"
-//	};
     public void initShaders() {
         try {
 			renderBatched.initShaders();
 			renderSingle.initShaders();
             AssetManager assetMgr = AssetManager.getInstance();
             Shader newShaderModelSingle = assetMgr.loadShader(newshaders, "model/model_viewer");
-            Shader new_shaderDef = assetMgr.loadShader(newshaders, "post/deferred", new IShaderDef() {
-                @Override
-                public String getDefinition(String define) {
-                    if ("RENDER_PASS".equals(define)) {
-                        return "#define RENDER_PASS 0";
-                    }
-                    return null;
-                }
-            });
             shaders.release();
             SimpleResourceManager tmp = shaders;
             shaders = newshaders;
             newshaders = tmp;
             shaderModelSingle = newShaderModelSingle;
-            shaderDeferred = new_shaderDef;
             
             shaderModelSingle.enable();
             shaderModelSingle.setProgramUniform1i("tex0", 0);
-            shaderDeferred.enable();
-            shaderDeferred.setProgramUniform1i("texColor", 0);
-            shaderDeferred.setProgramUniform1i("texNormals", 1);
-            shaderDeferred.setProgramUniform1i("texMaterial", 2);
-            shaderDeferred.setProgramUniform1i("texDepth", 3);
-            shaderDeferred.setProgramUniform1i("texShadow", 4);
-            shaderDeferred.setProgramUniform1i("texLight", 5);
-            shaderDeferred.setProgramUniform1i("texBlockLight", 6);
-            shaderDeferred.setProgramUniform1i("texAO", 7);
             Shader.disable();
         } catch (ShaderCompileError e) {
             newshaders.release();
@@ -125,30 +107,16 @@ public class ModelViewer extends GameBase {
 	@Override
 	public void onStatsUpdated() {
 		setTitle(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")");
-		tick--;
-		if (tick <= 0) {
+		reloadtick--;
+		if (reloadtick <= 0) {
 			initShaders();
 			Shaders.initShaders();
-			tick = 2222;
+			reloadtick = 2222;
 //			reloadModel();
 		}
 		
 	}
-	public boolean showNormals;
-	public boolean showBones;
-	public boolean showWireframe;
-	public boolean renderBatchedMode;
-	QModelBatchedRender renderBatched;
-	QModelRender renderSingle;
-	QModelRender curRender = null;
-	EntityModel entityModel;
-	int modelidx = 0;
-    boolean once = false;
 
-	private Vec3D tmpPos = new Vec3D();
-	boolean hadContext = false;
-	private FrameBuffer buf2;
-	public QModelProperties config = new QModelProperties();
 	private void reloadModel() {
 
 		try {
@@ -179,8 +147,12 @@ public class ModelViewer extends GameBase {
 			setModel(this.modelidx-1);
 			break;
 		case GLFW.GLFW_KEY_2:
-			this.renderBatched.initShaders();
 			initShaders();
+			break;
+		case GLFW.GLFW_KEY_3:
+			showDbg=!showDbg;
+			GLDebugTextures.setShow(showDbg);
+			
 			break;
 		}
 	}
@@ -199,8 +171,15 @@ public class ModelViewer extends GameBase {
 	
 	@Override
 	public void render(float fTime) {
+		Engine.setBlend(false);
+		Engine.enableDepthMask(false);
+		glDisable(GL11.GL_DEPTH_TEST);
+		Engine.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), fTime);
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
+        Engine.skyRenderer.renderSkybox();
+		glEnable(GL11.GL_DEPTH_TEST);
+		Engine.enableDepthMask(true);
 		this.shaderModelSingle.enable();
 		this.shaderModelSingle.setProgramUniformMatrix4("model_matrix", false, Engine.getIdentityMatrix().get(), false);
 		this.shaderModelSingle.setProgramUniformMatrix4("normal_matrix", false, Engine.getMatSceneNormal().get(), false);
@@ -237,37 +216,77 @@ public class ModelViewer extends GameBase {
 		
         GL40.glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        GLDebugTextures.readTexture("Pass0", "texColor", Engine.getSceneFB().getTexture(0));
-        GLDebugTextures.readTexture("Pass0", "texNormals", Engine.getSceneFB().getTexture(1));
-        GLDebugTextures.readTexture("Pass0", "texMaterial", Engine.getSceneFB().getTexture(2));
-        GLDebugTextures.readTexture("Pass0", "texLight", Engine.getSceneFB().getTexture(3));
         Engine.checkGLError("Pass0");
         
-        
+        FrameBuffer.unbindFramebuffer();
 		HBAOPlus.renderAO();
-        GLDebugTextures.readTexture("HBAOOutput", "texAO", buf.getTexture(0));
-        Engine.checkGLError("HBAOOutput "+buf.getTexture(0));
+        Engine.checkGLError("renderAO");
         
-        
-        buf2.bind();
-        buf2.clearFrameBuffer();
-        shaderDeferred.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
-        GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(1));
-        GL.bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(2));
-        GL.bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, Engine.getSceneFB().getDepthTex());
-//      GL.bindTexture(GL_TEXTURE4, GL_TEXTURE_2D, Engine.shadowRenderer.getDepthTex());
-//      GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, Engine.lightCompute.getTexture());
-        GL.bindTexture(GL_TEXTURE4, GL_TEXTURE_2D, TMgr.getEmpty());
-        GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty());
-        GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
-        GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, this.buf.getTexture(0));
-        Engine.drawFullscreenQuad();
-        glClear(GL11.GL_DEPTH_BUFFER_BIT);
-        sceneFB.bindRead();
-        GL30.glBlitFramebuffer(0, 0, sceneFB.getWidth(), sceneFB.getHeight(), 0, 0, sceneFB.getWidth(), sceneFB.getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        FrameBuffer.unbindReadFramebuffer();
+        Engine.setBlend(false);
+        glDisable(GL_DEPTH_TEST);
+        Engine.enableDepthMask(false);
+        Engine.outRenderer.renderDeferred(fTime, 0);
+        Engine.checkGLError("renderDeferred");
+        Engine.outRenderer.copySceneDepthBuffer();
+        Engine.checkGLError("copySceneDepthBuffer");
+
+        Engine.outRenderer.renderBlur();
+//        Engine.checkGLError("renderBlur");
+        Engine.outRenderer.renderBloom();
+        Engine.checkGLError("renderBloom");
+		
+		
+
+//		Engine.enableDepthMask(false);
+//		
+//		glDisable(GL11.GL_DEPTH_TEST);
+//		Engine.setBlend(false);
+//		Engine.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), fTime);
+//		Engine.getSceneFB().bind();
+//		Engine.getSceneFB().clearFrameBuffer();
+//		Engine.skyRenderer.renderSkybox();
+//		//enable depth test + mask then draw something solid
+//        
+//        
+//		Engine.checkGLError("Pass0");
+//		Engine.outRenderer.renderDeferred(fTime, 0);
+//		
+//		
+//        if (Engine.outRenderer.getSsr() > 0) {
+//            Engine.outRenderer.raytraceSSR();
+//        }
 //
+//        if (Engine.outRenderer.getSsr() > 0) {
+//            Engine.outRenderer.combineSSR();
+//        }
+//        Engine.setBlend(false);
+//        glDisable(GL_DEPTH_TEST);
+//        Engine.enableDepthMask(false);
+//        Engine.outRenderer.renderBlur();
+//
+//
+//        
+//        Engine.outRenderer.renderBloom();
+//        glEnable(GL_DEPTH_TEST);
+//        Engine.enableDepthMask(true);
+		
+        FrameBuffer fbOut = Engine.outRenderer.renderTonemap();
+
+		FrameBuffer.unbindFramebuffer();
+        glEnable(GL_DEPTH_TEST);
+        Engine.enableDepthMask(true);
+		glClearColor(0, 0, 0, 0);
+		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+		fbOut.bindRead();
+//        
+//        //             
+//        GL30.glBlitFramebuffer(0, 0, Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 0, 0, Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+//        FrameBuffer.unbindReadFramebuffer();
+//        Engine.checkGLError("renderTonemap");
+        Engine.outRenderer.renderAA(fbOut.getTexture(0), Engine.outRenderer.fbDeferred.getTexture(1), null);
+//        Engine.checkGLError("renderAA");
+
+        Engine.setBlend(true);
         if (!this.renderBatchedMode) {
             Engine.bindVAO(GLVAO.vaoModel);
             for (int i = 0; i < curRender.rendered.size(); i++) {
@@ -300,6 +319,7 @@ public class ModelViewer extends GameBase {
     	            }
     	        }
             }
+            Engine.checkGLError("render normals+wireframe");
         }
         if (showBones) {
 	        glClear(GL11.GL_DEPTH_BUFFER_BIT);
@@ -307,25 +327,22 @@ public class ModelViewer extends GameBase {
         	
         	renderBones((ModelRigged)this.entityModel.model, curRender.modelMat);
         	Engine.setBlend(true);
+            Engine.checkGLError("renderbones");
         }
     
         
-		FrameBuffer.unbindFramebuffer();
-        GLDebugTextures.readTexture("Pass1", "out", buf2.getTexture(0), 1);
-        glClearColor(0,0,0,0);
-        glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        Shaders.tonemap.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, buf2.getTexture(0));
-        Engine.drawFullscreenQuad();
+        glClear(GL11.GL_DEPTH_BUFFER_BIT);
 
         GLDebugTextures selTex = GLDebugTextures.getSelected();
 //        &&ticksran%40<20
         if (selTex != null) {
             GLDebugTextures.drawFullScreen(selTex);
+            Engine.checkGLError("drawFullScreen");
         } 
         
         
-        GLDebugTextures.drawAll(displayWidth, displayHeight);
+        if (GLDebugTextures.isShow())
+        	GLDebugTextures.drawAll(displayWidth, displayHeight);
         Engine.checkGLError("drawAll");
         double mx = Mouse.getX();
         double my = Mouse.getY();
@@ -461,14 +478,23 @@ public class ModelViewer extends GameBase {
 
 	@Override
 	public void preRenderUpdate(float f) {
-		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+        if (VR_SUPPORT) {
+            this.cameraController.updateVR();
+        } else {
+            this.cameraController.update(movement);
+        }
+        Vector3f renderPos = this.cameraController.getRenderPos(f);
+        Engine.camera.setPosition(renderPos);
+        if (!VR_SUPPORT) {
+            Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+        }
+		
         Engine.updateCamera();
-        UniformBuffer.updateUBO(null, f);
+        Engine.getSunLightModel().setTime(5850);
+//      Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
+      Engine.getSunLightModel().updateFrame(f);
+      Engine.setLightPosition(Engine.getSunLightModel().getLightPosition());
+      UniformBuffer.updateUBO(null, f);
 
         if (renderBatchedMode) {
         	curRender = renderBatched;
@@ -486,59 +512,6 @@ public class ModelViewer extends GameBase {
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
-        	if (hadContext) {
-                Engine.checkGLError("pre GLNativeLib.deleteContext");
-        		HBAOPlus.deleteContext();
-                Engine.checkGLError("post GLNativeLib.deleteContext");
-        	}
-            Engine.checkGLError("pre GLNativeLib.createContext");
-    		HBAOPlus.createContext(displayWidth, displayHeight, GameBase.baseInstance.caps);
-            Engine.checkGLError("post GLNativeLib.createContext");
-            Engine.resize(displayWidth, displayHeight);
-			if (buf != null) buf.release();
-			if (buf2 != null) buf2.release();
-			if (sceneFB != null) sceneFB.release();
-			buf2 = new FrameBuffer(displayWidth, displayHeight);
-			buf2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
-			buf2.setClearColor(GL_COLOR_ATTACHMENT0, 0F, 0F, 0F, 0F);
-			buf2.setHasDepthAttachment();
-			buf2.setup(null);
-			buf = new FrameBuffer(displayWidth, displayHeight);
-			buf.setColorAtt(GL_COLOR_ATTACHMENT0, GL11.GL_RGBA);
-			buf.setColorTexExtFmt(GL11.GL_RGBA);
-			buf.setColorTexExtType(GL11.GL_UNSIGNED_BYTE);
-			buf.setClearColor(GL_COLOR_ATTACHMENT0, 1, 1, 1, 1);
-			buf.setFilter(GL_COLOR_ATTACHMENT0, GL11.GL_NEAREST, GL11.GL_NEAREST);
-			buf.setup(null);
-	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT2, GL_RGBA16UI);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT3, GL_RGB16F);
-	        sceneFB.setFilter(GL_COLOR_ATTACHMENT2, GL_NEAREST, GL_NEAREST);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT0, 0F, 0F, 0F, 0F);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT1, 0F, 0F, 0F, 0F);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT2, 0F, 0F, 0F, 0F);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT3, 0F, 0F, 0F, 0F);
-	        sceneFB.setHasDepthAttachment();
-	        sceneFB.setup(null);
-	        Engine.setSceneFB(sceneFB);
-	        HBAOPlus.setDepthTex(Engine.getSceneFB().getDepthTex());
-	        HBAOPlus.setNormalTex(Engine.getSceneFB().getTexture(1));
-	        long ptr = MemoryUtil.memAddress(Engine.getMatSceneP().get());
-	        HBAOPlus.setProjMatrix(ptr);
-	        HBAOPlus.setOutputFBO(buf.getFB());
-	        HBAOPlus.setRadius(1);
-	        HBAOPlus.setBias(0.2f);
-	        HBAOPlus.setCoarseAO(1.2f);
-	        HBAOPlus.setBlur(true, 8, 16.0f);
-	        HBAOPlus.setBlurSharpen(false, 16, 0, 0);
-	        HBAOPlus.setDetailAO(1f);
-	        HBAOPlus.setPowerExponent(1);
-	        HBAOPlus.setDepthThreshold(false, 220, 0.5f);
-	        buf.bind();
-	        buf.clearFrameBuffer();
-			FrameBuffer.unbindFramebuffer();
             if (this.gui != null) {
                 this.gui.setPos(0, 0);
                 this.gui.setSize(displayWidth, displayHeight);
@@ -559,12 +532,25 @@ public class ModelViewer extends GameBase {
 	       }
 	       GuiWindowManager.update();
 	       AsyncTasks.completeTasks();
+			Engine.skyRenderer.tickUpdate();
 	}
 
+    public final static EngineInitSettings INIT_MODELVIEWER = new EngineInitSettings() {
+        @Override
+        protected void set() {
+            initShadowRenderer = false;
+            initBlurRenderer = true;
+            initWorldRenderer = false;
+            initLightCompute = false;
+            initSkyRenderer = true;
+            initFinalRenderer = true;
+            initModelRenderer = true;
+        }
+    };
 	@Override
 	public void initGame() {
-		QModelBatchedRender.isModelViewer = true;
-        Engine.init();
+		Engine.RENDER_SETTINGS.ssr = 0;
+        Engine.init(INIT_MODELVIEWER);
 		TextureManager.getInstance().init();
         EntityModel.preInit();
         EntityModel.postInit();
@@ -629,6 +615,7 @@ public class ModelViewer extends GameBase {
         GuiWindow window = GuiWindowManager.openWindow(GuiModelViewer.class);
         window.allwaysVisible = true;
         setModel(0);
+        GLDebugTextures.setShow(showDbg);
 	}
 
 	@Override

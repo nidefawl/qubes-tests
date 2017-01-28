@@ -25,7 +25,6 @@ import nidefawl.qubes.vr.VR;
 public class VRApp extends GameBase {
 	public VRApp() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");

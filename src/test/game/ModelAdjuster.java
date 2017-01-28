@@ -40,7 +40,6 @@ public class ModelAdjuster extends GameBase {
     public static ModelAdjuster instance;
     public ModelAdjuster() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 		Gui.FONT_SIZE_WINDOW_TITLE = 16;
 		Gui.FONT_SIZE_BUTTON = 14;
 	}
@@ -212,7 +211,6 @@ public class ModelAdjuster extends GameBase {
 
 	@Override
 	public void initGame() {
-		QModelBatchedRender.isModelViewer = true;
         Engine.init();
 		TextureManager.getInstance().init();
         EntityModel.preInit();

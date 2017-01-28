@@ -7,7 +7,6 @@ import nidefawl.qubes.util.Stats;
 public class EmptyGame extends GameBase {
 	public EmptyGame() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
 

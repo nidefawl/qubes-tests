@@ -23,11 +23,12 @@ import nidefawl.qubes.vec.Vec3D;
 
 public class TestSMAA extends GameBase {
 
+	static SimpleResourceManager newshaders = new SimpleResourceManager();
+	static SimpleResourceManager shaders = new SimpleResourceManager();
     final static boolean SRGB = false;
 	final CameraController cameraController = new CameraController();
 	public TestSMAA() {
 		TICKS_PER_SEC = 20;
-		Engine.initRenderers = false;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
@@ -45,18 +46,20 @@ public class TestSMAA extends GameBase {
 	boolean locked;
 	int lx;
 	int ly;
+	private boolean useQuads;
+	private Shader shaderZoomTex;
 
 	@Override
 	public void onStatsUpdated() {
 		System.out.println(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")");
 		
 		if (tick>=80) {
-			setTitle(""+lastFPS+" "+drawMode);
+			setTitle(""+lastFPS+" "+drawMode+" "+(useQuads?"quad":"tri"));
 			tick = 0;
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
         	}
-        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, SRGB);
+        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB, useQuads);
         	smaa.init(displayWidth, displayHeight);
         	Shaders.initShaders();
         	initShaders();
@@ -64,30 +67,46 @@ public class TestSMAA extends GameBase {
 	}
 
 	private void initShaders() {
-		if (this.shaderGammaToLin != null) {
-			this.shaderGammaToLin.release();
-		}
-		if (this.shaderLinToGamma != null) {
-			this.shaderLinToGamma.release();
-		}
-        this.shaderGammaToLin = AssetManager.getInstance().loadShader(null, "textured", new IShaderDef() {
-            @Override
-            public String getDefinition(String define) {
-                if ("SAMPLER_CONVERT_GAMMA".equals(define)) {
-                    return "#define SAMPLER_SRGB_TO_LIN 1";
+        try {
+            AssetManager assetMgr = AssetManager.getInstance();
+            Shader shaderGammaToLin = AssetManager.getInstance().loadShader(newshaders, "textured", new IShaderDef() {
+                @Override
+                public String getDefinition(String define) {
+                    if ("SAMPLER_CONVERT_GAMMA".equals(define)) {
+                        return "#define SAMPLER_SRGB_TO_LIN 1";
+                    }
+                    return null;
                 }
-                return null;
-            }
-        });
-        this.shaderLinToGamma = AssetManager.getInstance().loadShader(null, "textured", new IShaderDef() {
-            @Override
-            public String getDefinition(String define) {
-                if ("SAMPLER_CONVERT_GAMMA".equals(define)) {
-                    return "#define SAMPLER_LIN_TO_SRGB 1";
+            });
+            Shader shaderLinToGamma = AssetManager.getInstance().loadShader(newshaders, "textured", new IShaderDef() {
+                @Override
+                public String getDefinition(String define) {
+                    if ("SAMPLER_CONVERT_GAMMA".equals(define)) {
+                        return "#define SAMPLER_LIN_TO_SRGB 1";
+                    }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+            Shader zoomtex = assetMgr.loadShader(newshaders, "post/SMAA/zoomtexture");
+            shaders.release();
+            SimpleResourceManager tmp = shaders;
+            shaders = newshaders;
+            newshaders = tmp;
+            this.shaderGammaToLin = shaderGammaToLin;
+            this.shaderLinToGamma = shaderLinToGamma; 
+            this.shaderZoomTex = zoomtex; 
+            this.shaderZoomTex.enable();
+            this.shaderZoomTex.setProgramUniform1i("texColor", 0);
+            this.shaderGammaToLin.enable();
+            this.shaderGammaToLin.setProgramUniform1i("tex0", 0);
+            this.shaderLinToGamma.enable();
+            this.shaderLinToGamma.setProgramUniform1i("tex0", 0);
+            Shader.disable();
+        } catch (ShaderCompileError e) {
+            newshaders.release();
+            System.out.println("shader " + e.getName() + " failed to compile");
+            System.out.println(e.getLog());
+        }
 	}
 	@Override
 	protected void onTextInput(long window, int codepoint) {
@@ -124,6 +143,10 @@ public class TestSMAA extends GameBase {
 			case GLFW.GLFW_KEY_2:
 				renderPixelInspector = !renderPixelInspector;
 				break;
+			case GLFW.GLFW_KEY_3:
+				useQuads = !useQuads;
+				tick+=80;
+				break;
 			case GLFW.GLFW_KEY_1:
 				locked = !locked;
 				lx=GameMath.floor(Mouse.getX());
@@ -137,7 +160,7 @@ public class TestSMAA extends GameBase {
 		if (SRGB)
         GL11.glEnable(GL30.GL_FRAMEBUFFER_SRGB);
 		glEnable(GL_DEPTH_TEST);
-		smaa.render(this.image, drawMode, outputBuffer);
+		smaa.render(this.image, 0, drawMode, outputBuffer);
 		glDisable(GL_DEPTH_TEST);
 		if (SRGB)
         GL11.glDisable(GL30.GL_FRAMEBUFFER_SRGB);
@@ -147,14 +170,18 @@ public class TestSMAA extends GameBase {
 		Shaders.textured.enable();
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.outputBuffer.getTexture(0));
 		Engine.drawFullscreenQuad();
+		shaderZoomTex.enable();
+		int mx = locked?lx:GameMath.floor(Mouse.getX());
+		int my = locked?ly:GameMath.floor(Mouse.getY());
+		shaderZoomTex.setProgramUniform2f("mousePixelPos", mx, (this.t.getHeight()-1-my));
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.outputBuffer.getTexture(0));
+		Engine.drawFSTri();
 		Shader.disable();
 		if (!renderPixelInspector) {
 			return;
 		}
 		readImage(this.outputBuffer.getTexture(0));
 		Shaders.colored.enable();
-		int mx = locked?lx:GameMath.floor(Mouse.getX());
-		int my = locked?ly:GameMath.floor(Mouse.getY());
 		Tess tess = Tess.instance;
 
 		float scale = 32;
