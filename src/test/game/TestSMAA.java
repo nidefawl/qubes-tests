@@ -46,7 +46,6 @@ public class TestSMAA extends GameBase {
 	boolean locked;
 	int lx;
 	int ly;
-	private boolean useQuads;
 	private Shader shaderZoomTex;
 
 	@Override
@@ -54,12 +53,12 @@ public class TestSMAA extends GameBase {
 		System.out.println(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")");
 		
 		if (tick>=80) {
-			setTitle(""+lastFPS+" "+drawMode+" "+(useQuads?"quad":"tri"));
+			setTitle(""+lastFPS+" "+drawMode);
 			tick = 0;
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
         	}
-        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB, useQuads);
+        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB);
         	smaa.init(displayWidth, displayHeight);
         	Shaders.initShaders();
         	initShaders();
@@ -143,10 +142,6 @@ public class TestSMAA extends GameBase {
 			case GLFW.GLFW_KEY_2:
 				renderPixelInspector = !renderPixelInspector;
 				break;
-			case GLFW.GLFW_KEY_3:
-				useQuads = !useQuads;
-				tick+=80;
-				break;
 			case GLFW.GLFW_KEY_1:
 				locked = !locked;
 				lx=GameMath.floor(Mouse.getX());
@@ -170,16 +165,16 @@ public class TestSMAA extends GameBase {
 		Shaders.textured.enable();
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.outputBuffer.getTexture(0));
 		Engine.drawFullscreenQuad();
-		shaderZoomTex.enable();
 		int mx = locked?lx:GameMath.floor(Mouse.getX());
 		int my = locked?ly:GameMath.floor(Mouse.getY());
+		if (!renderPixelInspector) {
+			return;
+		}
+		shaderZoomTex.enable();
 		shaderZoomTex.setProgramUniform2f("mousePixelPos", mx, (this.t.getHeight()-1-my));
 		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.outputBuffer.getTexture(0));
 		Engine.drawFSTri();
 		Shader.disable();
-		if (!renderPixelInspector) {
-			return;
-		}
 		readImage(this.outputBuffer.getTexture(0));
 		Shaders.colored.enable();
 		Tess tess = Tess.instance;
