@@ -209,19 +209,14 @@ public class VRApp extends GameBase {
 		this.font.drawString(this.stats, 10, y+=30, -1, true, 1.0f);
 		Engine.setBlend(false);
 		Engine.checkGLError("drawGUI");
-        if (VR_SUPPORT) {
-        	setVRViewport();
-        }
+		setSceneViewport();
 	}
 
 	private Vec3D tmpPos = new Vec3D();
 	@Override
 	public void preRenderUpdate(float f) {
 		if (VR_SUPPORT) VR.updatePose(f);
-		this.cameraController.update(movement);
-		Vec3D.interp(this.cameraController.lastPos, this.cameraController.pos, f, this.tmpPos);
-		Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);
-		Engine.camera.setPosition(this.tmpPos);
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
 		Engine.updateCamera();
         UniformBuffer.updateUBO(null, f);
 	}

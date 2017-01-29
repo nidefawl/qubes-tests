@@ -61,22 +61,11 @@ public class TestSSAO extends GameBase {
         Shaders.textured.enable();
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, buf.getTexture(0));
         Engine.drawFullscreenQuad();
-//        String[] stack = HBAOPlus.getCallStack();
-//        for (int i = 0; i < stack.length; i++) {
-//        	System.out.println(stack[i]);
-//        }
-//        System.exit(1);;
 	}
 
-	private Vec3D tmpPos = new Vec3D();
 	@Override
 	public void preRenderUpdate(float f) {
-		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f); 
         Engine.updateCamera();
         UniformBuffer.updateUBO(null, f);
 
@@ -96,15 +85,17 @@ public class TestSSAO extends GameBase {
                 Engine.checkGLError("post GLNativeLib.deleteContext");
         	}
             Engine.checkGLError("pre GLNativeLib.createContext");
-    		HBAOPlus.createContext(displayWidth, displayHeight, GameBase.baseInstance.caps);
+            System.out.println(GameBase.baseInstance.caps);
+            HBAOPlus.createContext(128, 128, GameBase.baseInstance.caps);
+            HBAOPlus.hasContext = true;
             Engine.checkGLError("post GLNativeLib.createContext");
             Engine.resize(displayWidth, displayHeight);
 			if (buf != null) buf.release();
 			if (sceneFB != null) sceneFB.release();
 			buf = new FrameBuffer(displayWidth, displayHeight);
-			buf.setColorAtt(GL_COLOR_ATTACHMENT0, GL11.GL_RGBA);
-			buf.setColorTexExtFmt(GL11.GL_RGBA);
-			buf.setColorTexExtType(GL11.GL_UNSIGNED_BYTE);
+			buf.setColorAtt(GL_COLOR_ATTACHMENT0, GL11.GL_RGBA8);
+//			buf.setColorTexExtFmt(GL11.GL_RGBA);
+//			buf.setColorTexExtType(GL11.GL_UNSIGNED_BYTE);
 			buf.setClearColor(GL_COLOR_ATTACHMENT0, 1, 1, 1, 1);
 			buf.setFilter(GL_COLOR_ATTACHMENT0, GL11.GL_NEAREST, GL11.GL_NEAREST);
 			buf.setup(null);
@@ -153,6 +144,7 @@ public class TestSSAO extends GameBase {
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
+        Engine.setBlend(false);
 	}
 
 	@Override

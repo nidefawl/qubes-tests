@@ -141,15 +141,9 @@ public class FrustumTest extends GameBase {
         Engine.checkGLError("drawAll");
 	}
 
-	private Vec3D tmpPos = new Vec3D();
 	@Override
 	public void preRenderUpdate(float f) {
-		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+        Vector3f renderPos = this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
         Engine.updateCamera();
         Engine.updateFrustumFromInternal();
         UniformBuffer.updateUBO(null, f);

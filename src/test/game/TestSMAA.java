@@ -37,8 +37,7 @@ public class TestSMAA extends GameBase {
 	}
 	private int image;
 	SMAA smaa;
-
-	private Vec3D tmpPos = new Vec3D();
+	
 	private AssetTexture t;
 	boolean once = false;
 	private Shader shaderGammaToLin;
@@ -292,12 +291,7 @@ public class TestSMAA extends GameBase {
 	}
 	@Override
 	public void preRenderUpdate(float f) {
-		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
         Engine.updateCamera();
         UniformBuffer.updateUBO(null, f);
         if (!once) {

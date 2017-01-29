@@ -76,7 +76,7 @@ public class ModelViewer extends GameBase {
 	QModelRender renderSingle;
 	QModelRender curRender = null;
 	public QModelProperties config = new QModelProperties();
-	private boolean showDbg=true;
+	private boolean showDbg=false;
 	
     public void initShaders() {
         try {
@@ -175,6 +175,7 @@ public class ModelViewer extends GameBase {
 		Engine.enableDepthMask(false);
 		glDisable(GL11.GL_DEPTH_TEST);
 		Engine.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), fTime);
+		setSceneViewport();
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
         Engine.skyRenderer.renderSkybox();
@@ -271,6 +272,8 @@ public class ModelViewer extends GameBase {
 //        Engine.enableDepthMask(true);
 		
         FrameBuffer fbOut = Engine.outRenderer.renderTonemap();
+        
+        
 
 		FrameBuffer.unbindFramebuffer();
         glEnable(GL_DEPTH_TEST);
@@ -286,6 +289,7 @@ public class ModelViewer extends GameBase {
         Engine.outRenderer.renderAA(fbOut.getTexture(0), Engine.outRenderer.fbDeferred.getTexture(1), null);
 //        Engine.checkGLError("renderAA");
 
+		glClear(GL11.GL_DEPTH_BUFFER_BIT);
         Engine.setBlend(true);
         if (!this.renderBatchedMode) {
             Engine.bindVAO(GLVAO.vaoModel);
@@ -478,16 +482,7 @@ public class ModelViewer extends GameBase {
 
 	@Override
 	public void preRenderUpdate(float f) {
-        if (VR_SUPPORT) {
-            this.cameraController.updateVR();
-        } else {
-            this.cameraController.update(movement);
-        }
-        Vector3f renderPos = this.cameraController.getRenderPos(f);
-        Engine.camera.setPosition(renderPos);
-        if (!VR_SUPPORT) {
-            Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-        }
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
 		
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(5850);

@@ -126,7 +126,6 @@ public class FinalRendererTest extends GameBase {
 	}
 
     boolean once = false;
-    final static Vector3f tmp = new Vector3f();
 	@Override
 	public void render(float f) {
 		Engine.enableDepthMask(false);
@@ -134,6 +133,7 @@ public class FinalRendererTest extends GameBase {
 		glDisable(GL11.GL_DEPTH_TEST);
 		Engine.setBlend(false);
 		Engine.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), f);
+		setSceneViewport();
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
 		Engine.skyRenderer.renderSkybox();
@@ -188,16 +188,7 @@ public class FinalRendererTest extends GameBase {
 	private float lastWeather;
 	@Override
 	public void preRenderUpdate(float f) {
-        if (VR_SUPPORT) {
-            this.cameraController.updateVR();
-        } else {
-            this.cameraController.update(movement);
-        }
-        Vector3f renderPos = this.cameraController.getRenderPos(f);
-        Engine.camera.setPosition(renderPos);
-        if (!VR_SUPPORT) {
-            Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-        }
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
 		
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(TIME);

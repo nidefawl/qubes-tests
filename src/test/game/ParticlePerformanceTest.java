@@ -685,17 +685,7 @@ public class ParticlePerformanceTest extends GameBase {
 
 	@Override
 	public void preRenderUpdate(float f) {
-        if (VR_SUPPORT) {
-            this.cameraController.updateVR();
-        } else {
-            this.cameraController.update(movement);
-        }
-        Vector3f renderPos = this.cameraController.getRenderPos(f);
-        Engine.camera.setPosition(renderPos);
-        if (!VR_SUPPORT) {
-            Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-        }
-		
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(5850);
 //        Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
@@ -732,7 +722,7 @@ public class ParticlePerformanceTest extends GameBase {
         
         glClearColor(0.71F, 0.82F, 1.00F, 1F);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        Engine.setDefaultViewport();
+		setSceneViewport();
         for (int eye = 0; eye < (VR_SUPPORT ? 2 : 1); eye++) {
             if (VR_SUPPORT) {
                 Engine.getMatSceneP().load(eye == 0 ? VR.cam.projLeft : VR.cam.projRight);
@@ -842,9 +832,6 @@ public class ParticlePerformanceTest extends GameBase {
 		}
 		Engine.setBlend(false);
 		// Engine.checkGLError("drawAll");
-        if (VR_SUPPORT) {
-        	setVRViewport();
-        }
 	}
 	private void renderParticles(float f) {
 		Engine.setBlend(false);

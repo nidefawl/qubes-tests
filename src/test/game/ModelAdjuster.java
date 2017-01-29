@@ -153,12 +153,7 @@ public class ModelAdjuster extends GameBase {
 
 	@Override
 	public void preRenderUpdate(float f) {
-		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
         Engine.updateCamera();
         UniformBuffer.updateUBO(null, f);
 	}
@@ -209,9 +204,22 @@ public class ModelAdjuster extends GameBase {
 	       AsyncTasks.completeTasks();
 	}
 
+    public final static EngineInitSettings INIT_MODELVIEWER = new EngineInitSettings() {
+        @Override
+        protected void set() {
+            initShadowRenderer = false;
+            initBlurRenderer = true;
+            initWorldRenderer = false;
+            initLightCompute = false;
+            initSkyRenderer = true;
+            initFinalRenderer = true;
+            initModelRenderer = true;
+        }
+    };
 	@Override
 	public void initGame() {
-        Engine.init();
+		Engine.RENDER_SETTINGS.ssr = 0;
+        Engine.init(INIT_MODELVIEWER);
 		TextureManager.getInstance().init();
         EntityModel.preInit();
         EntityModel.postInit();

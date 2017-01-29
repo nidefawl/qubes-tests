@@ -52,7 +52,6 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 	 * 
 	 */
 	boolean first = true;
-	private Vec3D tmpPos = new Vec3D();
 	private Shader shaderHeavy;
 	private FontRenderer font;
 	float lastMx, lastMy;
@@ -212,22 +211,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 	}
 	@Override
 	public void preRenderUpdate(float f) {
-		if (VR_SUPPORT) {
-			this.cameraController.updateVR();
-		} else {
-			this.cameraController.update(movement);
-		}
-		
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-
-		if (VR_SUPPORT) {
-			
-		} else {
-	        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
-		}
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
 		
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(5850);

@@ -323,12 +323,7 @@ public class SkyboxSpriteTest extends GameBase {
 	boolean renderIntoCubemap = false;
 	@Override
 	public void preRenderUpdate(float f) {
-		this.cameraController.update(movement);
-		Vec3D.sub(this.cameraController.pos, this.cameraController.lastPos, this.tmpPos);
-		this.tmpPos.scale(f);
-		Vec3D.add(this.tmpPos, this.cameraController.lastPos, this.tmpPos);
-        Engine.camera.setPosition(this.tmpPos);
-        Engine.camera.setOrientation(this.cameraController.yaw, this.cameraController.pitch, false, 4.0f);   
+		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
         Engine.updateCamera();
         Engine.getSunLightModel().setTime(TIME);
 //        Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
