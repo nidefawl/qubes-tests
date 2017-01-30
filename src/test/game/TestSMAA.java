@@ -3,6 +3,8 @@ package test.game;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 
+import java.util.ArrayList;
+
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.*;
 
@@ -14,6 +16,7 @@ import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
+import nidefawl.qubes.perf.GPUProfiler;
 import nidefawl.qubes.render.post.SMAA;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TextureManager;
@@ -154,7 +157,11 @@ public class TestSMAA extends GameBase {
 		if (SRGB)
         GL11.glEnable(GL30.GL_FRAMEBUFFER_SRGB);
 		glEnable(GL_DEPTH_TEST);
+        if (GPUProfiler.PROFILING_ENABLED)
+        	GPUProfiler.start("smaa");
 		smaa.render(this.image, 0, 0, drawMode, outputBuffer);
+		if (GPUProfiler.PROFILING_ENABLED)
+        	GPUProfiler.end();
 		glDisable(GL_DEPTH_TEST);
 		if (SRGB)
         GL11.glDisable(GL30.GL_FRAMEBUFFER_SRGB);
@@ -166,6 +173,16 @@ public class TestSMAA extends GameBase {
 		Engine.drawFullscreenQuad();
 		int mx = locked?lx:GameMath.floor(Mouse.getX());
 		int my = locked?ly:GameMath.floor(Mouse.getY());
+        glClear(GL11.GL_DEPTH_BUFFER_BIT);
+		ArrayList<String> n4 = this.glProfileResults;
+		if (!n4.isEmpty()) {
+			Engine.setBlend(true);
+			Shaders.textured.enable();
+			for (int i = 0; i < n4.size(); i++) {
+    			this.font.drawString(n4.get(i), 0, 30+(i*this.font.getLineHeight()), -1, true, 1.0f, 0);	
+			}
+			Engine.setBlend(false);
+		}
 		if (!renderPixelInspector) {
 			return;
 		}

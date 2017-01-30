@@ -171,7 +171,7 @@ public class FinalRendererTest extends GameBase {
 		FrameBuffer.unbindFramebuffer();
 		glClearColor(0, 0, 0, 0);
 		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        Engine.outRenderer.renderAA(fbOut.getTexture(0), Engine.outRenderer.fbDeferred.getTexture(1), null);
+        Engine.outRenderer.renderAA(fbOut.getTexture(0), null);
         
 
 //		Shaders.tonemap.enable();
