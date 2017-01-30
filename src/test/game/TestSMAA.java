@@ -57,7 +57,7 @@ public class TestSMAA extends GameBase {
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
         	}
-        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB);
+        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB, false);
         	smaa.init(displayWidth, displayHeight);
         	Shaders.initShaders();
         	initShaders();
@@ -154,7 +154,7 @@ public class TestSMAA extends GameBase {
 		if (SRGB)
         GL11.glEnable(GL30.GL_FRAMEBUFFER_SRGB);
 		glEnable(GL_DEPTH_TEST);
-		smaa.render(this.image, 0, drawMode, outputBuffer);
+		smaa.render(this.image, 0, 0, drawMode, outputBuffer);
 		glDisable(GL_DEPTH_TEST);
 		if (SRGB)
         GL11.glDisable(GL30.GL_FRAMEBUFFER_SRGB);
