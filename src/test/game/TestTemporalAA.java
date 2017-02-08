@@ -29,8 +29,7 @@ import nidefawl.qubes.shader.DebugShaders.Var;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
-import nidefawl.qubes.vec.Matrix4f;
-import nidefawl.qubes.vec.Vec3D;
+import nidefawl.qubes.vec.*;
 
 public class TestTemporalAA extends GameBase {
 	final CameraController cameraController = new CameraController();
@@ -38,6 +37,7 @@ public class TestTemporalAA extends GameBase {
 	private FrameBuffer buf2;
 	private FrameBuffer sceneFB;
 	private TesselatorState tessState;
+	int offset = 500;
 	SMAA smaa;
 	boolean hadContext = false;
 	boolean temporal = true;
@@ -56,7 +56,7 @@ public class TestTemporalAA extends GameBase {
 
 	@Override
 	public void onStatsUpdated() {
-		setTitle(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+") Reprojection: "+temporal+", velocity generation post: "+calcVelocityPost);
+		setTitle(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+") Reprojection: "+temporal+", velocity generation post: "+calcVelocityPost+", vsync: "+getVSync());
 		initShaders();
 	}
 
@@ -90,8 +90,9 @@ public class TestTemporalAA extends GameBase {
 		}
 	}
 
-	Matrix4f prevView, prevProj;
+	Matrix4f prevView, prevMV, prevProj, prevModel;
 	BufferedMatrix prevMVP;
+	BufferedMatrix matReproject;
 	private int image;
 	private TesselatorState tessState2;
 	@Override
@@ -99,12 +100,13 @@ public class TestTemporalAA extends GameBase {
 		Engine.isDither=true;
 		Matrix4f prevProjJittered = Matrix4f.pool();
 		Engine.addJitterToProjection(prevProj, prevProjJittered);
-		Matrix4f.mul(prevProjJittered, prevView, prevMVP);
+		Matrix4f.mul(prevProjJittered, prevMV, prevMVP);
 		prevMVP.update();
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
         shaderDraw3dVelocity.enable();
         shaderDraw3dVelocity.setProgramUniformMatrix4("mvp_prev", false, prevMVP.get(), false);
+//      shaderDraw3dVelocity.setProgramUniformMatrix4("mat_reproject", false, matReproject.get(), false);
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, TMgr.getEmptyWhite());
 		tessState.drawQuads();
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
@@ -127,6 +129,19 @@ public class TestTemporalAA extends GameBase {
 		buf2.clearFrameBuffer();
 
 		shaderCombineao.enable();
+		Matrix4f prevVP = Matrix4f.pool();
+		Matrix4f matTranslation = Matrix4f.pool();
+		Matrix4f.mul(prevProjJittered, prevView, prevVP);
+		Matrix4f.mul(prevModel, Engine.getMatSceneM().getInvMat4(), matTranslation);
+		Matrix4f.mul(prevVP, matTranslation, prevVP);
+		Matrix4f.mul(prevVP, Engine.getMatSceneVP().getInvMat4(), matReproject);
+//		Matrix4f.mul(matReproject, matTranslation, matReproject);
+//		Vector4f test = Vector4f.pool();
+//		test.set(0, 0, 0, 1);
+//		Matrix4f.transform(matTranslation, test, test);
+//		System.out.println(test);
+		matReproject.update();
+		shaderCombineao.setProgramUniformMatrix4("mat_reproject", false, Engine.getMatReproject().get(), false);
 		shaderCombineao.setProgramUniformMatrix4("mvp_prev", false, prevMVP.get(), false);
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
         GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, buf.getTexture(0));
@@ -142,7 +157,9 @@ public class TestTemporalAA extends GameBase {
 		FrameBuffer.unbindFramebuffer();
 
 		prevProj.load(Engine.getMatSceneP_internal());
-		prevView.load(Engine.getMatSceneMV());
+		prevView.load(Engine.getMatSceneV());
+		prevModel.load(Engine.getMatSceneM());
+		prevMV.load(Engine.getMatSceneMV());
 
         glClearColor(0.11F, 0.82F, 1.00F, 1F);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
@@ -156,11 +173,11 @@ public class TestTemporalAA extends GameBase {
         	GPUProfiler.end();
 //		smaa.render(Engine.getSceneFB().getTexture(0), 0, TMgr.getEmpty(), 0, null);
 //		buffer.put(Engine.getMatSceneVP().get()); 
-//        glClearColor(0.11F, 0.82F, 1.00F, 1F);
-//        glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-//      Shaders.textured.enable();
-//      GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, velocity);
-//      Engine.drawFullscreenQuad();
+        glClearColor(0.11F, 0.82F, 1.00F, 1F);
+        glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+      Shaders.textured.enable();
+      GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, velocity);
+      Engine.drawFullscreenQuad();
 //		
 
         glClear(GL11.GL_DEPTH_BUFFER_BIT);
@@ -302,7 +319,7 @@ public class TestTemporalAA extends GameBase {
 		TextureManager.getInstance().init();
 		setVSync(true);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
-		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
+		this.cameraController.set(-3.93f+offset, 2.21f+offset, 0.13f+offset, 25.3f, 89.6f);
         Engine.setBlend(false);
 	}
 
@@ -313,7 +330,7 @@ public class TestTemporalAA extends GameBase {
 		int w = 1;
 		int d = 2;
 		Tess.instance.setColor(0x332211, 0xff);
-		Tess.instance.setOffset(0, 0, 0);
+		Tess.instance.setOffset(offset, offset, offset);
 		Tess.instance.add(0, 0, d);
 		Tess.instance.add(0, w, d);
 		Tess.instance.add(w, w, d);
@@ -340,22 +357,26 @@ public class TestTemporalAA extends GameBase {
 		Tess.instance.add(w, w, -d*2);
 		Tess.instance.add(0, w, -d*2);
 		Tess.instance.draw(GL_QUADS, this.tessState);
-		Tess.instance.setOffset(0, 0, 0);
 		int scale = 16;
 		int gW = 4;
 		int gL = 4;
 		float tscale = scale*0.5f;
+		Tess.instance.setOffset(offset, offset, offset);
 		Tess.instance.setColor(-1, 0xff);
 		Tess.instance.add(-scale*gW, 0, -scale*gL, 0, 0);
 		Tess.instance.add(-scale*gW, 0, scale*gL, 0, tscale*gL*2);
 		Tess.instance.add(scale*gW, 0, scale*gL, tscale*gW*2, tscale*gL*2);
 		Tess.instance.add(scale*gW, 0, -scale*gL, tscale*gW*2, 0);
 		Tess.instance.draw(GL_QUADS, this.tessState2);
+		Tess.instance.setOffset(0, 0, 0);
 		initShaders();
 		glEnable(GL_DEPTH_TEST);
+		prevModel = new Matrix4f();
         prevProj = new Matrix4f();
+        prevMV = new Matrix4f();
         prevView = new Matrix4f();
         prevMVP = new BufferedMatrix();
+        matReproject = new BufferedMatrix();
 		this.font = FontRenderer.get(0, 12, 0);
 		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/fence.png");
 		this.image = TextureManager.getInstance().makeNewTexture(t, true, true, -1, GL_RGBA8);

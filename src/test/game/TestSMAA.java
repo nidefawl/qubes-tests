@@ -11,6 +11,7 @@ import org.lwjgl.opengl.*;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
 import nidefawl.qubes.assets.AssetTexture;
+import nidefawl.qubes.assets.AssetTexture.Type;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
@@ -52,10 +53,9 @@ public class TestSMAA extends GameBase {
 
 	@Override
 	public void onStatsUpdated() {
-		System.out.println(lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+")");
-		
+		String stats = lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+") SPIR: "+SMAA.LOAD_SPIR;
+		setTitle(stats);
 		if (tick>=80) {
-			setTitle(""+lastFPS+" "+drawMode);
 			tick = 0;
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
@@ -143,6 +143,11 @@ public class TestSMAA extends GameBase {
 				break;
 			case GLFW.GLFW_KEY_2:
 				renderPixelInspector = !renderPixelInspector;
+				break;
+			case GLFW.GLFW_KEY_3:
+				SMAA.LOAD_SPIR = !SMAA.LOAD_SPIR;
+				tick+=80;
+				onStatsUpdated();
 				break;
 			case GLFW.GLFW_KEY_1:
 				locked = !locked;
@@ -349,15 +354,16 @@ public class TestSMAA extends GameBase {
 
 	@Override
 	public void lateInitGame() {
-		this.t = AssetManager.getInstance().loadPNGAsset("textures/Unigine01.png");
-		GLFW.glfwSetWindowSize(windowId, t.getWidth(), t.getHeight());
-		
         int format = SRGB?GL21.GL_SRGB8_ALPHA8:GL_RGBA8;
-		this.image = TextureManager.getInstance().makeNewTexture(t, false, true, 0, format);
+//		this.t = AssetManager.getInstance().loadPNGAsset("textures/Unigine01.png");
+//		this.image = TextureManager.getInstance().makeNewTexture(t, false, true, 0, format);
+		this.t = AssetManager.getInstance().loadTexture("textures/Unigine01_PNG_DXT1_1.DDS", Type.DDS, false);
+		this.image = TextureManager.getInstance().makeDDS2DTexture(t, false, true);
         this.outputBuffer = FrameBuffer.make(null, t.getWidth(), t.getHeight(), format, false, true);
         initShaders();
 		Engine.setBlend(false);
 		this.font=FontRenderer.get(0, 22, 0);
+		GLFW.glfwSetWindowSize(windowId, t.getWidth(), t.getHeight());
 	}
 
 	@Override

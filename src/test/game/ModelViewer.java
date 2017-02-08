@@ -286,7 +286,7 @@ public class ModelViewer extends GameBase {
 //        GL30.glBlitFramebuffer(0, 0, Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 0, 0, Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 //        FrameBuffer.unbindReadFramebuffer();
 //        Engine.checkGLError("renderTonemap");
-        Engine.outRenderer.renderAA(fbOut.getTexture(0), null);
+        Engine.outRenderer.renderAA(fbOut.getTexture(0), null, false);
 //        Engine.checkGLError("renderAA");
 
 		glClear(GL11.GL_DEPTH_BUFFER_BIT);

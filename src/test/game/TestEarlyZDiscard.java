@@ -71,13 +71,13 @@ public class TestEarlyZDiscard extends GameBase {
         GL30.glBlitFramebuffer(0, 0, this.fb.getWidth(), this.fb.getHeight(), 0, 0, this.fb2.getWidth(), this.fb2.getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
         FrameBuffer.unbindReadFramebuffer();
         
-		glDepthFunc(GL_EQUAL);
+        Engine.setDepthFunc(GL_EQUAL);
 		
         this.shaderHeavy.enable();
         Engine.drawFullscreenQuad();
 		FrameBuffer.unbindFramebuffer();
-		
-		glDepthFunc(GL_LEQUAL);
+
+        Engine.setDepthFunc(GL_LEQUAL);
         glClearColor(1,1,1,0);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         Shaders.textured.enable();

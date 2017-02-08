@@ -357,7 +357,7 @@ public class ParticlePerformanceTest extends GameBase {
                     return null;
                 }
             });
-            Shader skybox = assetMgr.loadShader(newshaders, "sky/clouds");
+            Shader skybox = assetMgr.loadShader(newshaders, "sky/skybox_generate");
             shaders.release();
             SimpleResourceManager tmp = shaders;
             shaders = newshaders;
