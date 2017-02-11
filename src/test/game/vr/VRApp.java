@@ -285,7 +285,7 @@ public class VRApp extends GameBase {
 
 		redraw();
 		initShaders();
-        VR.initApp(this);
+        VR.initApp();
 	}
 
 	@Override
