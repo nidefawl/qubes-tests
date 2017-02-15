@@ -13,6 +13,7 @@ import org.lwjgl.vulkan.*;
 
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.util.Stats;
+import nidefawl.qubes.vulkan.VKContext;
 import nidefawl.qubes.vulkan.VulkanErr;
 
 public class EmptyVKGame extends GameBase {
@@ -49,11 +50,8 @@ public class EmptyVKGame extends GameBase {
 
 	@Override
 	public void render(float f) {
-		int currentBuffer = this.vkContext.currentBuffer;
-		PointerBuffer pCommandBuffers = this.vkContext.pCommandBuffers;
-
-        // Select the command buffer for the current framebuffer image/attachment
-        pCommandBuffers.put(0, renderCommandBuffers[currentBuffer]);
+		int currentBuffer = VKContext.currentBuffer;
+		this.vkContext.submitCommandBuffer(renderCommandBuffers[currentBuffer]);
 
         // Submit to the graphics queue
         int err = vkQueueSubmit(this.vkContext.vkQueue, this.vkContext.submitInfo, VK_NULL_HANDLE);
@@ -148,7 +146,7 @@ public class EmptyVKGame extends GameBase {
         VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
                 .pNext(NULL)
-                .renderPass(vkContext.clearRenderPass)
+                .renderPass(vkContext.renderPass)
                 .pClearValues(clearValues);
         VkRect2D renderArea = renderPassBeginInfo.renderArea();
         renderArea.offset()
@@ -205,8 +203,23 @@ public class EmptyVKGame extends GameBase {
 	@Override
 	public void rebuildRenderCommands() {
 		vkContext.resetRenderCommandPool();
+		destroyCommandBuffers();
         renderCommandBuffers = createRenderCommandBuffers();
 
 	}
+
+    private void destroyCommandBuffers() {
+    	if (renderCommandBuffers != null) {
+    		for (int i = 0; i < renderCommandBuffers.length; i++) {
+    			VkCommandBuffer cmdBuf = renderCommandBuffers[i];
+    			vkFreeCommandBuffers(vkContext.device, vkContext.renderCommandPool, cmdBuf);
+    		}
+    		renderCommandBuffers = null;
+    	}
+	}
+	public void shutdown() {
+    	destroyCommandBuffers();
+    	super.shutdown();
+    }
 
 }

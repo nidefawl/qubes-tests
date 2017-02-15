@@ -1,8 +1,13 @@
 package test.game;
 
+import java.io.*;
+
 import nidefawl.qubes.GameBase;
+import nidefawl.qubes.assets.AssetBinary;
+import nidefawl.qubes.assets.AssetManagerClient;
 import nidefawl.qubes.gl.Engine;
-import nidefawl.qubes.util.Stats;
+import nidefawl.qubes.texture.TextureBinMips;
+import nidefawl.qubes.util.*;
 
 public class EmptyGame extends GameBase {
 	public EmptyGame() {
@@ -10,6 +15,9 @@ public class EmptyGame extends GameBase {
 	}
 	public static void main(String[] args) {
 
+
+        GameContext.setSideAndPath(Side.CLIENT, "../Game/");
+		GameContext.earlyInit();
 		new EmptyGame().startGame();
 	}
 	
@@ -70,7 +78,8 @@ public class EmptyGame extends GameBase {
 	@Override
 	public void lateInitGame() {
 		// TODO Auto-generated method stub
-
+		AssetBinary bin = AssetManagerClient.getInstance().loadBin("vulkan/texture.bin");
+		TextureBinMips texture2dData = new TextureBinMips(bin);
 	}
 
 

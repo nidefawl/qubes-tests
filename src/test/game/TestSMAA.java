@@ -334,7 +334,6 @@ public class TestSMAA extends GameBase {
         	}
         	if (smaa == null) smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM);
         	smaa.init(displayWidth, displayHeight);
-        	
         }
 	}
 
