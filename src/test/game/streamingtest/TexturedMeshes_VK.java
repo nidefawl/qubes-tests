@@ -30,12 +30,12 @@ import nidefawl.qubes.vec.*;
 import nidefawl.qubes.vulkan.*;
 import nidefawl.qubes.vulkan.VkMemoryManager.MemoryChunk;
 
-public class VKTriangle extends GameBase {
+public class TexturedMeshes_VK extends GameBase {
 	static {
 		System.setProperty("renderer.vulkan", "true");
 	}
 	static final boolean INVERSE_Z = true;
-	public VKTriangle() {
+	public TexturedMeshes_VK() {
 		TICKS_PER_SEC = 20;
 		DEBUG_LAYER = true;
 	}
@@ -43,7 +43,7 @@ public class VKTriangle extends GameBase {
 
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new VKTriangle().startGame();
+		new TexturedMeshes_VK().startGame();
 	}
 
     final CameraController cameraController = new CameraController();

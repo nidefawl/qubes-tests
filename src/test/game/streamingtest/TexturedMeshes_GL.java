@@ -22,8 +22,8 @@ import nidefawl.qubes.util.*;
 import nidefawl.qubes.vulkan.VKContext;
 import nidefawl.qubes.vulkan.VkTess;
 
-public class OpenglTriangle extends GameBase {
-	public OpenglTriangle() {
+public class TexturedMeshes_GL extends GameBase {
+	public TexturedMeshes_GL() {
 		TICKS_PER_SEC = 20;
 		DEBUG_LAYER = false;
 	}
@@ -34,7 +34,7 @@ public class OpenglTriangle extends GameBase {
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new OpenglTriangle().startGame();
+		new TexturedMeshes_GL().startGame();
 	}
 	
 	private Shader shaderTexturedLight;
