@@ -20,6 +20,7 @@ import nidefawl.qubes.assets.*;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.input.CameraController;
+import nidefawl.qubes.render.gui.BoxGUI;
 import nidefawl.qubes.shader.IShaderDef;
 import nidefawl.qubes.shader.UniformBuffer;
 import nidefawl.qubes.texture.TextureBinMips;
@@ -190,7 +191,6 @@ public class TexturedMesh_VK extends GameBase {
 	TextureBinMips texture2dData;
     public Camera         camera;
 	private VkCommandBuffer[] renderCommandBuffers;
-	private long descriptorSet1;
 	private long descriptorSet2;
 	private AssetTexture t;
 	private long sampler;
@@ -210,7 +210,6 @@ public class TexturedMesh_VK extends GameBase {
 	private void setupDescriptorSets() {
         try ( MemoryStack stack = stackPush() ) {
 //        	vkContext.descLayouts.getDescriptorSets);
-        	this.descriptorSet1 = vkContext.descLayouts.allocDescSetUBOScene();
         	this.descriptorSet2 = vkContext.descLayouts.allocDescSetSampleSingle();
         	
 
@@ -219,15 +218,7 @@ public class TexturedMesh_VK extends GameBase {
 	        textureDescriptor.sampler(sampler);
 	        textureDescriptor.imageLayout(texture.imageLayout);
 
-            VkWriteDescriptorSet.Buffer writeDescriptorSet = VkWriteDescriptorSet.callocStack(16, stack);
-	        writeDescriptorSet.position(0).limit(3);
-	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 0, this.descriptorSet1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 0, UniformBuffer.uboMatrix3D.getDescriptorBuffer());
-	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 1, this.descriptorSet1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, UniformBuffer.uboMatrix2D.getDescriptorBuffer());
-	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 2, this.descriptorSet1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2, UniformBuffer.uboSceneData.getDescriptorBuffer());
-	        
-	        vkUpdateDescriptorSets(vkContext.device, writeDescriptorSet, null);
-
-	        writeDescriptorSet.position(0).limit(1);
+            VkWriteDescriptorSet.Buffer writeDescriptorSet = VkWriteDescriptorSet.callocStack(1, stack);
 	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 0, this.descriptorSet2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, textureDescriptor);
 	        vkUpdateDescriptorSets(vkContext.device, writeDescriptorSet, null);
         }
@@ -333,8 +324,6 @@ public class TexturedMesh_VK extends GameBase {
 	InitCrap initCrap;
 	private boolean[] recorded;
 	static class InitCrap {
-		LongBuffer pDescriptorSets = memAllocLong(2);
-		IntBuffer pOffsets = memAllocInt(32);
         VkCommandBufferBeginInfo cmdBufInfo = VkCommandBufferBeginInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
                 .pNext(NULL).flags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
@@ -362,8 +351,6 @@ public class TexturedMesh_VK extends GameBase {
         	renderAreaOffset.x(0).y(0);
 		}
         void destroy() {
-        	memFree(pDescriptorSets);
-        	memFree(pOffsets);
         	cmdBufInfo.free();
         	clearValues.free();
         	clearValues2.free();
@@ -379,27 +366,20 @@ public class TexturedMesh_VK extends GameBase {
     	initCrap.renderPassBeginInfo.renderPass(vkContext.getMainRenderPass());
     	initCrap.renderAreaExtent.set(width, height);
     	initCrap.renderPassBeginInfo.framebuffer(framebuffer);
-    	initCrap.pDescriptorSets.put(0, descriptorSet1);
-    	initCrap.pDescriptorSets.put(1, descriptorSet2);
-    	initCrap.pOffsets.put(0, UniformBuffer.uboMatrix3D.getDynamicOffset());
-    	initCrap.pOffsets.put(1, UniformBuffer.uboMatrix2D.getDynamicOffset());
-    	initCrap.pOffsets.put(2, UniformBuffer.uboSceneData.getDynamicOffset());
-    	initCrap.pOffsets.position(0).limit(3);
     	initCrap.renderPassBeginInfo.pClearValues(initCrap.clearValues);
         int err = vkBeginCommandBuffer(commandBuffer, initCrap.cmdBufInfo);
         if (err != VK_SUCCESS) {
             throw new AssertionError("Failed to begin render command buffer: " + VulkanErr.toString(err));
         }
-        vkCmdBeginRenderPass(commandBuffer, initCrap.renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        VkPipelines.bindPipeline(commandBuffer, VkPipelines.main);
-        VkPipelines.bindDescriptorSets(initCrap.pDescriptorSets, initCrap.pOffsets);
+        Engine.beginRenderPass(commandBuffer, initCrap.renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        Engine.setDescriptorSet1(this.descriptorSet2);
+        Engine.bindPipeline(VkPipelines.main);
 		int idx = renderModeReRecord ? VKContext.currentBuffer : 0;
 		if(cube[idx].idxCount > 0)
 		cube[idx].bindAndDraw(commandBuffer, bufferoffset);
 		if(plane[idx].idxCount > 0)
 		plane[idx].bindAndDraw(commandBuffer, bufferoffset);
-        VkPipelines.bindPipeline(commandBuffer, VkPipelines.screen2d);
-        VkPipelines.bindDescriptorSets(initCrap.pDescriptorSets, initCrap.pOffsets);
+		Engine.bindPipeline(VkPipelines.screen2d);
 
 		vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 		VkTess tess = VkTess.instance;
@@ -412,8 +392,8 @@ public class TexturedMesh_VK extends GameBase {
 		tess.bindAndDraw(commandBuffer, 0);
 		
 
-        VkPipelines.bindPipeline(commandBuffer, VkPipelines.colored2D);
-        VkPipelines.bindDescriptorSets(initCrap.pDescriptorSets, initCrap.pOffsets);
+        Engine.clearDescriptorSet1();
+		Engine.bindPipeline(VkPipelines.colored2D);
 		tess.setColor(0x0, 180);
 		tess.add(0, displayHeight-600, 0);
 		tess.add(300, displayHeight-600, 0);
@@ -422,15 +402,25 @@ public class TexturedMesh_VK extends GameBase {
 		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER);
 		tess.bindAndDraw(commandBuffer, 0);
 
-		
-    	initCrap.pDescriptorSets.put(1, this.font.getTTF().descriptorSetTex);
-        VkPipelines.bindPipeline(commandBuffer, VkPipelines.fontRender2D);
-        VkPipelines.bindDescriptorSets(initCrap.pDescriptorSets, initCrap.pOffsets);
-		FontRenderer.setCommandBuffer(commandBuffer);
+
         Engine.pxStack.push(10, 10, 0);
 		this.font.drawString("test string hello", 0, displayHeight-40, -1, true, 1f);
         Engine.pxStack.pop();
 
+        Engine.clearDescriptorSet1();
+    	Engine.bindPipeline(VkPipelines.gui);
+        BoxGUI.INST.box.x = 100;
+        BoxGUI.INST.box.y = 100;
+        BoxGUI.INST.box.z = 200;
+        BoxGUI.INST.box.w = 200;
+
+        vkCmdPushConstants(commandBuffer, VkPipelines.gui.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT, 0, BoxGUI.INST.update());
+		tess.add(0, 0, 0, 0, 1);
+		tess.add(displayWidth, 0, 0, 1, 1);
+		tess.add(displayWidth, displayHeight, 0, 1, 0);
+		tess.add(0, displayHeight, 0, 0, 0);
+		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER);
+		tess.bindAndDraw(commandBuffer, 0);
 		
         vkCmdEndRenderPass(commandBuffer);
         

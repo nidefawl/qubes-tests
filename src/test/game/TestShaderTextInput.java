@@ -14,6 +14,7 @@ import nidefawl.qubes.font.*;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
+import nidefawl.qubes.render.gui.BoxGUI;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
@@ -109,22 +110,22 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
 		float b = 0;
 		
         if (drawShadow) {
-            Shaders.gui.setProgramUniform1f("zpos", z-1);
-            Shaders.gui.setProgramUniform4f("box", x, y+1, x+w, y+h);
-//            Shaders.gui.setProgramUniform4f("color", 1-r, 1-g, 1-b, alpha);
-            Shaders.gui.setProgramUniform4f("color", 0.05f,0.05f,0.05f, alpha);
-            Shaders.gui.setProgramUniform1f("sigma", shadowSigma);
-            Shaders.gui.setProgramUniform1f("corner", round);
+            BoxGUI.setZPos(z-1);
+            BoxGUI.setBox(x, y+1, x+w, y+h);
+//            BoxGUI.setColor(1-r, 1-g, 1-b, alpha);
+            BoxGUI.setColor(0.05f,0.05f,0.05f, alpha);
+            BoxGUI.setSigma(shadowSigma);
+            BoxGUI.setRound(round);
           Engine.enableDepthMask(false);
             Engine.drawQuad();
           Engine.enableDepthMask(true);
         } else {
-            Shaders.gui.setProgramUniform1f("corner", round);
+            BoxGUI.setRound(round);
         }
-        Shaders.gui.setProgramUniform4f("box", x, y, x+w, y+h);
-        Shaders.gui.setProgramUniform1f("zpos", z);
-        Shaders.gui.setProgramUniform4f("color", r, g, b, alpha);
-        Shaders.gui.setProgramUniform1f("sigma", boxSigma);
+        BoxGUI.setBox(x, y, x+w, y+h);
+        BoxGUI.setZPos(z);
+        BoxGUI.setColor(r, g, b, alpha);
+        BoxGUI.setSigma(boxSigma);
         Engine.drawQuad();
 		Shaders.textured.enable();
 //		Engine.pxStack.push(50, 50, 50);
