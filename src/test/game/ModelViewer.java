@@ -192,7 +192,7 @@ public class ModelViewer extends GameBase {
 
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, TMgr.getEmptyWhite());
 		tessState.drawQuads();
-		glLineWidth(1.5f);
+		Engine.lineWidth(1.5f);
 		glPointSize(12.0f);
         Shaders.normals.enable();
         Shaders.normals.setProgramUniformMatrix4("model_matrix", false, Engine.getIdentityMatrix().get(), false);
@@ -298,7 +298,7 @@ public class ModelViewer extends GameBase {
     	        if (showNormals) {
 //    	            UniformBuffer.setNormalMat(this.render.normalMat.get());
 //    	            UniformBuffer.setNormalMat(Engine.getMatSceneNormal().get());
-    	    		glLineWidth(1.5f);
+    	    		Engine.lineWidth(1.5f);
     	    		glPointSize(12.0f);
     		        Shaders.normals.enable();
     		        Shaders.normals.setProgramUniformMatrix4("model_matrix", false, curRender.modelMat.get(), false);
@@ -309,7 +309,7 @@ public class ModelViewer extends GameBase {
 //    	            UniformBuffer.setNormalMat(Engine.getMatSceneNormal().get());
     	        }
     	        if (showWireframe) {
-    	    		glLineWidth(2f);
+    	    		Engine.lineWidth(2f);
     	    		glPointSize(12.0f);
     				Shaders.wireframe.enable();
     		        Shaders.wireframe.setProgramUniformMatrix4("model_matrix", false, curRender.modelMat.get(), false);
@@ -407,7 +407,7 @@ public class ModelViewer extends GameBase {
 	private static void renderBones(ModelRigged model, BufferedMatrix modelMat) {
 //		Engine.enableDepthMask(false);
 //		glDisable(GL_DEPTH_TEST);
-		glLineWidth(2f);
+		Engine.lineWidth(2f);
 		glPointSize(12.0f);
 		Shaders.colored3D.enable();
 		for (int i = 0; i < 2; i++) {

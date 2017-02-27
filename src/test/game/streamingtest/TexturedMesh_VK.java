@@ -19,7 +19,11 @@ import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.*;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
-import nidefawl.qubes.input.CameraController;
+import nidefawl.qubes.gui.Gui;
+import nidefawl.qubes.gui.controls.Button;
+import nidefawl.qubes.gui.windows.GuiContext;
+import nidefawl.qubes.gui.windows.GuiWindowManager;
+import nidefawl.qubes.input.*;
 import nidefawl.qubes.render.gui.BoxGUI;
 import nidefawl.qubes.shader.IShaderDef;
 import nidefawl.qubes.shader.UniformBuffer;
@@ -64,17 +68,36 @@ public class TexturedMesh_VK extends GameBase {
 
 	@Override
 	protected void onKeyPress(long window, int key, int scancode, int action, int mods) {
+        if (window == windowId) {
+            if (key == -1) { // ALT + Print Screen (maybe more)
+                return;
+            }
+            if (GuiContext.input != null) {
+                if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
+                    GuiContext.input.focused = false;
+                    GuiContext.input = null;
+                }
+//                return;
+            }
+            if (GuiWindowManager.onKeyPress(key, scancode, action, mods)) {
+                return;
+            }
+            if (this.gui != null) {
+                if (this.gui.onKeyPress(key, scancode, action, mods)) {
+                    return;
+                }
+            }
 
-		if (action == GLFW.GLFW_PRESS) {
-			switch (key) {
-			case GLFW.GLFW_KEY_SPACE:
-				renderModeReRecord = !renderModeReRecord;
-				forceRedraw = true;
-				Arrays.fill(recorded, false);
-				break;
-			}
-		}
-
+    		if (action == GLFW.GLFW_PRESS) {
+    			switch (key) {
+    			case GLFW.GLFW_KEY_SPACE:
+    				renderModeReRecord = !renderModeReRecord;
+    				forceRedraw = true;
+    				Arrays.fill(recorded, false);
+    				return;
+    			}
+    		}
+        }
 	}
 
 	int bufferSize = 12312;
@@ -87,7 +110,7 @@ public class TexturedMesh_VK extends GameBase {
 			recorded[currentBuffer]=true;
 			vkResetCommandBuffer(buffer, 0);
 	    	long fbSwapchain = vkContext.swapChain.framebuffers[currentBuffer];
-	        createRenderCommandBuffers(buffer, fbSwapchain);
+	        createRenderCommandBuffers(buffer, fbSwapchain, f);
 		}
 		this.vkContext.submitCommandBuffer(buffer);
 	}
@@ -200,12 +223,45 @@ public class TexturedMesh_VK extends GameBase {
 	VkTesselatorState[] cube;
 	VkTesselatorState[] plane;
 	private FontRenderer font;
+	private Gui guiTest;
 	@Override
 	public void lateInitGame() {
 
 		loadTexture(this.texture2dData);
 		setupDescriptorSets();
         this.font = FontRenderer.get(0, 22, 1);
+        this.guiTest = new Gui() {
+			
+			private Button back;
+
+			@Override
+			public void render(float fTime, double mX, double mY) {
+		        renderBackground(fTime, mX, mY, true, 0.7f);
+		        Engine.setPipeStateFontrenderer();
+		        font.drawString("Loading game...", this.posX+this.width / 2, this.posY+this.height / 2 - 20, -1, true, 1, 2);
+		        super.renderButtons(fTime, mX, mY);
+			}
+			@Override
+			protected String getTitle() {
+				return "test gui!";
+			}
+			
+			@Override
+			public void initGui(boolean first) {
+				this.width = GameBase.guiWidth/2;
+				this.height = GameBase.guiHeight/2;
+				this.posX = GameBase.guiWidth/2-this.width/2;
+				this.posY = GameBase.guiHeight/2-this.height/2;
+		        this.clearElements();
+		        {
+		            back = new Button(6, "Back");
+		            this.add(back);
+		            back.setSize(200, 40);
+		            back.setPos(this.width/2-back.width/2, this.height/3*2-back.height/2);
+		        }
+		    }
+		};
+		showGUI(guiTest);
 	}
 	private void setupDescriptorSets() {
         try ( MemoryStack stack = stackPush() ) {
@@ -357,7 +413,7 @@ public class TexturedMesh_VK extends GameBase {
         	renderPassBeginInfo.free();
         }
 	}
-    private void createRenderCommandBuffers(VkCommandBuffer commandBuffer, long framebuffer) {
+    private void createRenderCommandBuffers(VkCommandBuffer commandBuffer, long framebuffer, float fTime) {
     	if (initCrap == null) {
     		initCrap = new InitCrap();
     	}
@@ -388,8 +444,7 @@ public class TexturedMesh_VK extends GameBase {
 		tess.add(320, 0, 0, 1, 0);
 		tess.add(320, 320, 0, 1, 1);
 		tess.add(0, 320, 0, 0, 1);
-		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER);
-		tess.bindAndDraw(commandBuffer, 0);
+		tess.drawQuads();
 		
 
         Engine.clearDescriptorSet1();
@@ -399,8 +454,7 @@ public class TexturedMesh_VK extends GameBase {
 		tess.add(300, displayHeight-600, 0);
 		tess.add(300, displayHeight, 0);
 		tess.add(0, displayHeight, 0);
-		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER);
-		tess.bindAndDraw(commandBuffer, 0);
+		tess.drawQuads();
 
 
         Engine.pxStack.push(10, 10, 0);
@@ -409,18 +463,20 @@ public class TexturedMesh_VK extends GameBase {
 
         Engine.clearDescriptorSet1();
     	Engine.bindPipeline(VkPipelines.gui);
-        BoxGUI.INST.box.x = 100;
-        BoxGUI.INST.box.y = 100;
-        BoxGUI.INST.box.z = 200;
-        BoxGUI.INST.box.w = 200;
+    	BoxGUI.reset();
+    	BoxGUI.setBox(100, 150, 200, 190);
 
         vkCmdPushConstants(commandBuffer, VkPipelines.gui.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT, 0, BoxGUI.INST.update());
 		tess.add(0, 0, 0, 0, 1);
 		tess.add(displayWidth, 0, 0, 1, 1);
 		tess.add(displayWidth, displayHeight, 0, 1, 0);
 		tess.add(0, displayHeight, 0, 0, 0);
-		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER);
-		tess.bindAndDraw(commandBuffer, 0);
+		tess.drawQuads();
+        double mx = Mouse.getX();
+        double my = Mouse.getY();
+		
+        if (this.gui != null)
+        	this.gui.render(fTime, mx, my);
 		
         vkCmdEndRenderPass(commandBuffer);
         

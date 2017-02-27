@@ -212,7 +212,7 @@ public class Hex extends GameBase {
 	public void render(float f) {
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
-		GL11.glLineWidth(4);
+		Engine.lineWidth(4);
 		Shaders.colored.enable();
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		Tess t = Tess.instance;
@@ -354,7 +354,7 @@ public class Hex extends GameBase {
 		float scale2 = (float) ((1/16f)*zoom);
 		float oneOverScale2 = 1/scale2;
 		Tess t = Tess.instance;
-		GL11.glLineWidth(2);
+		Engine.lineWidth(2);
 		Shaders.colored.enable();
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		int hw = 160;
@@ -405,7 +405,7 @@ public class Hex extends GameBase {
 			}
 		}
 		if (hit != null) {
-			GL11.glLineWidth(2);
+			Engine.lineWidth(2);
 			long hexPos = biomes.toHex(hit.x*oneOverScale2, hit.z*oneOverScale2);
 			HexCell hexHit = biomes.getPos(hexPos);
 			float cx = (float)biomes.getCenterX(hexHit.x, hexHit.z)*scale2;
@@ -420,7 +420,7 @@ public class Hex extends GameBase {
 			}
 			t.draw(GL11.GL_TRIANGLE_FAN);
 		}
-		GL11.glLineWidth(2);
+		Engine.lineWidth(2);
 
 		t.setColorF(0x00ffff, 1);
 		t.setOffset(renderOffsetX, 0, renderOffsetZ);

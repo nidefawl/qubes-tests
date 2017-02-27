@@ -133,7 +133,7 @@ public class TestFontRenderer extends GameBase {
 			fr.drawString(text, Game.displayWidth/2.0f, 340, -1, true, 1.0f, 2);
 		}
 		Shaders.colored.enable();
-		GL11.glLineWidth(2.0f);
+		Engine.lineWidth(2.0f);
 		Tess.instance.setColorF(0xff00ff, 1.0f);
 		Tess.instance.add(Game.displayWidth/2.0f, 0);
 		Tess.instance.add(Game.displayWidth/2.0f, Game.displayHeight-1);
