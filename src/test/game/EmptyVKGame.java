@@ -146,7 +146,7 @@ public class EmptyVKGame extends GameBase {
         VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
                 .pNext(NULL)
-                .renderPass(vkContext.renderPass)
+                .renderPass(vkContext.getMainRenderPass())
                 .pClearValues(clearValues);
         VkRect2D renderArea = renderPassBeginInfo.renderArea();
         renderArea.offset()

@@ -22,8 +22,8 @@ import nidefawl.qubes.util.*;
 import nidefawl.qubes.vulkan.VKContext;
 import nidefawl.qubes.vulkan.VkTess;
 
-public class TexturedMeshes_GL extends GameBase {
-	public TexturedMeshes_GL() {
+public class TexturedMesh_GL extends GameBase {
+	public TexturedMesh_GL() {
 		TICKS_PER_SEC = 20;
 		DEBUG_LAYER = false;
 	}
@@ -34,7 +34,7 @@ public class TexturedMeshes_GL extends GameBase {
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new TexturedMeshes_GL().startGame();
+		new TexturedMesh_GL().startGame();
 	}
 	
 	private Shader shaderTexturedLight;
