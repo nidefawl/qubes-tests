@@ -2,40 +2,47 @@ package test.game.streamingtest;
 
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.vulkan.VK10.*;
 
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.nio.LongBuffer;
+import java.util.Arrays;
+import java.util.Random;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.*;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
-import org.lwjgl.vulkan.VkVertexInputAttributeDescription.Buffer;
 
+import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.*;
+import nidefawl.qubes.biome.Biome;
+import nidefawl.qubes.biome.BiomeColor;
+import nidefawl.qubes.entity.PlayerSelf;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
-import nidefawl.qubes.gui.Gui;
-import nidefawl.qubes.gui.controls.Button;
+import nidefawl.qubes.gui.*;
+import nidefawl.qubes.gui.controls.*;
+import nidefawl.qubes.gui.controls.ComboBox.ComboBoxList;
 import nidefawl.qubes.gui.windows.GuiContext;
 import nidefawl.qubes.gui.windows.GuiWindowManager;
-import nidefawl.qubes.input.*;
+import nidefawl.qubes.input.CameraController;
+import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.render.gui.BoxGUI;
-import nidefawl.qubes.shader.IShaderDef;
+import nidefawl.qubes.render.gui.LineGUI;
 import nidefawl.qubes.shader.UniformBuffer;
 import nidefawl.qubes.texture.TextureBinMips;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vulkan.*;
+import nidefawl.qubes.vulkan.FrameBuffer;
+import nidefawl.qubes.world.World;
+import nidefawl.qubes.world.biomes.HexBiome;
 
 public class TexturedMesh_VK extends GameBase {
 	static {
 		System.setProperty("renderer.vulkan", "true");
 	}
-	static final boolean INVERSE_Z = true;
 	public TexturedMesh_VK() {
 		TICKS_PER_SEC = 20;
 		DEBUG_LAYER = true;
@@ -48,8 +55,7 @@ public class TexturedMesh_VK extends GameBase {
 	}
 
     final CameraController cameraController = new CameraController();
-	private boolean renderModeReRecord = true;
-	private boolean forceRedraw = true;
+	private boolean needsRedraw = true;
 
 	@Override
 	public void onStatsUpdated() {
@@ -62,8 +68,9 @@ public class TexturedMesh_VK extends GameBase {
 
 	@Override
 	protected void onTextInput(long window, int codepoint) {
-		// TODO Auto-generated method stub
-
+        if (GuiContext.input != null) {
+            GuiContext.input.onTextInput(codepoint);
+        }
 	}
 
 	@Override
@@ -91,9 +98,9 @@ public class TexturedMesh_VK extends GameBase {
     		if (action == GLFW.GLFW_PRESS) {
     			switch (key) {
     			case GLFW.GLFW_KEY_SPACE:
-    				renderModeReRecord = !renderModeReRecord;
-    				forceRedraw = true;
-    				Arrays.fill(recorded, false);
+//    				renderModeReRecord = !renderModeReRecord;
+//    				forceRedraw = true;
+//    				Arrays.fill(recorded, false);
     				return;
     			}
     		}
@@ -106,39 +113,25 @@ public class TexturedMesh_VK extends GameBase {
 	public void render(float f) {
 		int currentBuffer = VKContext.currentBuffer;
 		VkCommandBuffer buffer = renderCommandBuffers[currentBuffer];
-		if (!recorded[currentBuffer]||renderModeReRecord) {
-			recorded[currentBuffer]=true;
-			vkResetCommandBuffer(buffer, 0);
-	    	long fbSwapchain = vkContext.swapChain.framebuffers[currentBuffer];
-	        createRenderCommandBuffers(buffer, fbSwapchain, f);
-		}
+		vkResetCommandBuffer(buffer, 0);
+        createRenderCommandBuffers(buffer, currentBuffer, f);
 		this.vkContext.submitCommandBuffer(buffer);
 	}
 	
-	int bufferoffset = 0;
 	@Override
 	public void preRenderUpdate(float f) {
+        Engine.getSunLightModel().setTime(5850);
+//      Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
+      Engine.getSunLightModel().updateFrame(0);
+      Engine.setLightPosition(Engine.getSunLightModel().getLightPosition());
 		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
         Engine.updateCamera();
-		if (forceRedraw) {
-			vkContext.syncAllFences();
-		}
         UniformBuffer.updateUBO(null, f);
-        if (renderModeReRecord) {
-        	drawScene(VKContext.currentBuffer, false, rand.nextInt(12)*4);
-        } else if (forceRedraw) {
-//        	for (int i = 0; i < vkContext.swapChain.numImages; i++) {
-        		drawScene(0, true, 0);
-//        	}
-        } else {
-        }
-        forceRedraw = false;
 	}
 
-	private void drawScene(int idx, boolean makeDeviceLocal, int offset) {
-		bufferoffset = offset;
+	private void drawScene() {
 		VkTess tess = VkTess.instance;
-		int l = 2;
+		int l = 8;
 		float d = 5;
 		for (int x = -l; x <= l; x++) {
 			for (int z = -l; z <= l; z++) {
@@ -178,15 +171,27 @@ public class TexturedMesh_VK extends GameBase {
 				
 			}
 		}
-		int bufferMode = makeDeviceLocal ? VkTess.DEVICE_LOCAL_UPLOAD : VkTess.STREAM_UPLOAD;
-		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER, bufferMode, cube[idx], bufferoffset);
+		int stateVsize = tess.getVSize();
+		int stateVcount = tess.vertexcount;
+		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER, VkTess.DEVICE_LOCAL_UPLOAD, cube);
+		int[] buffer = tess.rawBuffer;
+		int idx = 0;
+		for (int i = 0; i < stateVcount; i++) {
+			int offset = i*stateVsize;
+			tess.rawBuffer[idx++] = buffer[offset+0];
+			tess.rawBuffer[idx++] = buffer[offset+1];
+			tess.rawBuffer[idx++] = buffer[offset+2];
+			tess.rawBuffer[idx++] = buffer[offset+3];
+			tess.vertexcount++;
+		}
+		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER, VkTess.DEVICE_LOCAL_UPLOAD, cubesShadow);
 		tess.setOffset(0, 0, 0);
 		tess.setNormals(0, 0, 1);
 		tess.add( 2,  2, 3.5f, 1, 1);
 		tess.add(-2,  2, 3.5f, 0, 1);
 		tess.add(-2, -2, 3.5f, 0, 0);
 		tess.add( 2, -2, 3.5f, 1, 0);
-		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER, bufferMode, plane[idx], bufferoffset);
+		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER, VkTess.DEVICE_LOCAL_UPLOAD, plane);
     
 	}
 	@Override
@@ -196,86 +201,116 @@ public class TexturedMesh_VK extends GameBase {
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
+            Game.displayWidth=displayWidth;
+            Game.displayHeight=displayHeight;
             Engine.resize(displayWidth, displayHeight);
+//            if (Game.GL_ERROR_CHECKS)
+//                Engine.checkGLError("onResize");
+//            GLDebugTextures.onResize();
         }
 	}
+    @Override
+    public void onWindowResize(int displayWidth, int displayHeight) {
+        if (!VR_SUPPORT||isStarting) {
+            Game.displayWidth=displayWidth;
+            Game.displayHeight=displayHeight;
+            setRenderResolution(displayWidth, displayHeight);
+        }
+    }
 
 	@Override
 	public void initGame() {
-		Engine.init(EngineInitSettings.INIT_NONE.setVulkan(true).setInverseZ());
+		EngineInitSettings settings = EngineInitSettings.INIT_NONE.setVulkan(true).setInverseZ();
+		settings.initShadowProj = true;
+		Engine.init(settings);
+        GameBase.loadingScreen = new LoadingScreen();
+		if (loadingScreen != null)
+        loadingScreen.setProgress(0, 0, "Initializing");
 		setVSync(false);
 		camera = new Camera();
 		
 		AssetBinary bin = AssetManagerClient.getInstance().loadBin("vulkan/texture.bin");
 		texture2dData = new TextureBinMips(bin);
 		this.cameraController.set(-1.58f, 0.01f, 1.50f, 0.00f, 17.64f);
+		try {
+			Thread.sleep(600);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (loadingScreen != null)
+        loadingScreen.setProgress(0, 1, "Something done");
 	}
 	
 	TextureBinMips texture2dData;
     public Camera         camera;
 	private VkCommandBuffer[] renderCommandBuffers;
-	private long descriptorSet2;
+	private long descTextureCube;
 	private AssetTexture t;
 	private long sampler;
 	private long textureView;
 	private VkTexture texture;
 
-	VkTesselatorState[] cube;
-	VkTesselatorState[] plane;
+	VkTesselatorState cube;
+	VkTesselatorState plane;
 	private FontRenderer font;
-	private Gui guiTest;
+    VkCommandBufferBeginInfo cmdBufInfo = VkCommandBufferBeginInfo.calloc()
+            .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
+            .pNext(NULL).flags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+	private FrameBuffer frameBuffer;
+	private FrameBuffer frameBufferScene;
+	private VkTesselatorState cubesShadow;
 	@Override
 	public void lateInitGame() {
-
+		if (loadingScreen != null)
+        loadingScreen.setProgress(1, 0, "lateInitGame");
+		try {
+			Thread.sleep(600);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (loadingScreen != null)
+        loadingScreen.setProgress(1, 0.33f, "loadTexture");
 		loadTexture(this.texture2dData);
-		setupDescriptorSets();
+		if (loadingScreen != null)
+        loadingScreen.setProgress(1, 0.66f, "setupDescriptorSets");
+    	this.descTextureCube = vkContext.descLayouts.allocDescSetSampleSingle();
+    	this.descTextureGbufferColor = vkContext.descLayouts.allocDescSetSampleSingle();
         this.font = FontRenderer.get(0, 22, 1);
-        this.guiTest = new Gui() {
-			
-			private Button back;
+		showGUI(new GuiTest());
+		if (loadingScreen != null)
+        loadingScreen.setProgress(1, 1f, "done");
+		this.frameBuffer = new FrameBuffer(vkContext);
+		this.frameBuffer.fromRenderpass(VkRenderPasses.passgbuffer, 0, VK_IMAGE_USAGE_SAMPLED_BIT);
 
-			@Override
-			public void render(float fTime, double mX, double mY) {
-		        renderBackground(fTime, mX, mY, true, 0.7f);
-		        Engine.setPipeStateFontrenderer();
-		        font.drawString("Loading game...", this.posX+this.width / 2, this.posY+this.height / 2 - 20, -1, true, 1, 2);
-		        super.renderButtons(fTime, mX, mY);
-			}
-			@Override
-			protected String getTitle() {
-				return "test gui!";
-			}
-			
-			@Override
-			public void initGui(boolean first) {
-				this.width = GameBase.guiWidth/2;
-				this.height = GameBase.guiHeight/2;
-				this.posX = GameBase.guiWidth/2-this.width/2;
-				this.posY = GameBase.guiHeight/2-this.height/2;
-		        this.clearElements();
-		        {
-		            back = new Button(6, "Back");
-		            this.add(back);
-		            back.setSize(200, 40);
-		            back.setPos(this.width/2-back.width/2, this.height/3*2-back.height/2);
-		        }
-		    }
-		};
-		showGUI(guiTest);
+		this.frameBufferScene = new FrameBuffer(vkContext);
+		this.frameBufferScene.fromRenderpass(VkRenderPasses.passGBufferSubpass, 0, VK_IMAGE_USAGE_SAMPLED_BIT);
+		
+
+		cube = new VkTesselatorState(vkContext).tag("cubes");
+		plane = new VkTesselatorState(vkContext).tag("plane");
+		cubesShadow = new VkTesselatorState(vkContext).tag("cubesShadow");
+		drawScene();
 	}
-	private void setupDescriptorSets() {
+	private void updateDescriptorSets() {
         try ( MemoryStack stack = stackPush() ) {
 //        	vkContext.descLayouts.getDescriptorSets);
-        	this.descriptorSet2 = vkContext.descLayouts.allocDescSetSampleSingle();
-        	
-
 	        VkDescriptorImageInfo.Buffer textureDescriptor = VkDescriptorImageInfo.callocStack(1, stack);
 	        textureDescriptor.imageView(textureView);
 	        textureDescriptor.sampler(sampler);
 	        textureDescriptor.imageLayout(texture.imageLayout);
-
             VkWriteDescriptorSet.Buffer writeDescriptorSet = VkWriteDescriptorSet.callocStack(1, stack);
-	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 0, this.descriptorSet2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, textureDescriptor);
+	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 0, this.descTextureCube, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, textureDescriptor);
+	        vkUpdateDescriptorSets(vkContext.device, writeDescriptorSet, null);
+        }
+        try ( MemoryStack stack = stackPush() ) {
+//        	vkContext.descLayouts.getDescriptorSets);
+	        VkDescriptorImageInfo.Buffer textureDescriptor = VkDescriptorImageInfo.callocStack(1, stack);
+	        FramebufferAttachment att = this.frameBuffer.getAtt(0);
+	        textureDescriptor.imageView(att.getView());
+	        textureDescriptor.sampler(sampler);
+	        textureDescriptor.imageLayout(att.imageLayout);
+            VkWriteDescriptorSet.Buffer writeDescriptorSet = VkWriteDescriptorSet.callocStack(1, stack);
+	        VkInitializers.writeDescriptorSet(writeDescriptorSet, 0, this.descTextureGbufferColor, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, textureDescriptor);
 	        vkUpdateDescriptorSets(vkContext.device, writeDescriptorSet, null);
         }
 	}
@@ -350,9 +385,13 @@ public class TexturedMesh_VK extends GameBase {
 	private VkBuffer tmpBuffer1;
 	private VkBuffer tmpBuffer2;
 	int nTick = 0;
+	private long descTextureGbufferColor;
 	@Override
 	public void tick() {
 		if (!isStarting) {
+            if (this.gui != null) {
+                this.gui.update();
+            }
 			this.cameraController.tickUpdate();
 //			if (nTick++%40==0) {
 //				if (this.rand.nextInt(4)==0) {
@@ -377,108 +416,123 @@ public class TexturedMesh_VK extends GameBase {
 		extend = 1.0f+GameMath.sin(ticksran*1.03f)*0.5f;
 	}
 	
-	InitCrap initCrap;
-	private boolean[] recorded;
-	static class InitCrap {
-        VkCommandBufferBeginInfo cmdBufInfo = VkCommandBufferBeginInfo.calloc()
-                .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
-                .pNext(NULL).flags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
-        VkClearValue.Buffer clearValues = VkClearValue.calloc(2);
-        VkClearValue.Buffer clearValues2 = VkClearValue.calloc(1);
+    private void createRenderCommandBuffers(VkCommandBuffer commandBuffer, int currentBuf, float fTime) {
 
-        VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc()
-                .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
-                .pNext(NULL)
-                .renderPass(0)
-                .pClearValues(clearValues);
-		private VkExtent2D renderAreaExtent;
-		private VkOffset2D renderAreaOffset;
-        public InitCrap() {
-            clearValues.get(0).color()
-            .float32(0, 100/255.0f)
-            .float32(1, 100/255.0f)
-            .float32(2, 100/255.0f)
-            .float32(3, 1.0f);
-        	clearValues.get(1).depthStencil().set(INVERSE_Z?0.0f:1.0f, 0);
-        	clearValues2.get().depthStencil().set(INVERSE_Z?0.0f:1.0f, 0);
-        	VkRect2D renderArea = renderPassBeginInfo.renderArea();
-        	renderAreaExtent = renderArea.extent();
-        	renderAreaOffset = renderArea.offset();
-        	renderAreaOffset.x(0).y(0);
-		}
-        void destroy() {
-        	cmdBufInfo.free();
-        	clearValues.free();
-        	clearValues2.free();
-        	renderPassBeginInfo.free();
-        }
-	}
-    private void createRenderCommandBuffers(VkCommandBuffer commandBuffer, long framebuffer, float fTime) {
-    	if (initCrap == null) {
-    		initCrap = new InitCrap();
-    	}
-    	int width = vkContext.swapChain.width;
-    	int height = vkContext.swapChain.height;
-    	initCrap.renderPassBeginInfo.renderPass(vkContext.getMainRenderPass());
-    	initCrap.renderAreaExtent.set(width, height);
-    	initCrap.renderPassBeginInfo.framebuffer(framebuffer);
-    	initCrap.renderPassBeginInfo.pClearValues(initCrap.clearValues);
-        int err = vkBeginCommandBuffer(commandBuffer, initCrap.cmdBufInfo);
+    	long fbSwapchain = vkContext.swapChain.framebuffers[currentBuf];
+        int err = vkBeginCommandBuffer(commandBuffer, this.cmdBufInfo);
         if (err != VK_SUCCESS) {
             throw new AssertionError("Failed to begin render command buffer: " + VulkanErr.toString(err));
         }
-        Engine.beginRenderPass(commandBuffer, initCrap.renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        Engine.setDescriptorSet1(this.descriptorSet2);
-        Engine.bindPipeline(VkPipelines.main);
-		int idx = renderModeReRecord ? VKContext.currentBuffer : 0;
-		if(cube[idx].idxCount > 0)
-		cube[idx].bindAndDraw(commandBuffer, bufferoffset);
-		if(plane[idx].idxCount > 0)
-		plane[idx].bindAndDraw(commandBuffer, bufferoffset);
-		Engine.bindPipeline(VkPipelines.screen2d);
+        if (Game.displayWidth != vkContext.swapChain.width || Game.displayHeight != vkContext.swapChain.height) {
+        	System.err.println("swapchain size != display size");
+        	System.err.printf("%dx%d vs %dx%d vs %dx%d\n", windowWidth, windowHeight, Game.displayWidth, Game.displayHeight, vkContext.swapChain.width, vkContext.swapChain.height);
+        } else {
 
-		vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-		VkTess tess = VkTess.instance;
-		tess.setColor(-1, 255);
-		tess.add(0, 0, 0, 0, 0);
-		tess.add(320, 0, 0, 1, 0);
-		tess.add(320, 320, 0, 1, 1);
-		tess.add(0, 320, 0, 0, 1);
-		tess.drawQuads();
-		
+            Engine.setViewport(0, 0, Game.displayWidth, Game.displayHeight);
+//            {
+//                Engine.beginRenderPass(commandBuffer, VkRenderPasses.passGBufferSubpass, this.frameBufferScene.get(), VK_SUBPASS_CONTENTS_INLINE);
+    //
+//                Engine.clearDescriptorSet1();
+//                Engine.bindPipeline(VkPipelines.shadowSolid);
+//                PushConstantBuffer buf = PushConstantBuffer.INST;
+//                buf.setMat4(0, Engine.getIdentityMatrix());
+//                buf.setInt(16, 0);
+//                vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
+    //
+//        		if(cubesShadow.idxCount > 0)
+//        			cubesShadow.bindAndDraw(commandBuffer);
+//        		
+//        		vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+//        		
+//                vkCmdEndRenderPass(commandBuffer);
+//            }
+//            {
+//                Engine.beginRenderPass(commandBuffer, VkRenderPasses.passgbuffer, this.frameBuffer.get(), VK_SUBPASS_CONTENTS_INLINE);
+//                
+//                Engine.setDescriptorSet1(this.descTextureCube);
+//                Engine.bindPipeline(VkPipelines.mainOffscreen);
+//                
+//        		if(cube.idxCount > 0)
+//        		cube.bindAndDraw(commandBuffer);
+//        		if(plane.idxCount > 0)
+//        		plane.bindAndDraw(commandBuffer);
+//        		
+//                vkCmdEndRenderPass(commandBuffer);
+//            }
+            {
 
-        Engine.clearDescriptorSet1();
-		Engine.bindPipeline(VkPipelines.colored2D);
-		tess.setColor(0x0, 180);
-		tess.add(0, displayHeight-600, 0);
-		tess.add(300, displayHeight-600, 0);
-		tess.add(300, displayHeight, 0);
-		tess.add(0, displayHeight, 0);
-		tess.drawQuads();
+                Engine.beginRenderPass(commandBuffer, VkRenderPasses.passSubpassSwapchain, fbSwapchain, VK_SUBPASS_CONTENTS_INLINE);
+                
+                Engine.setDescriptorSet1(this.descTextureCube);
+                Engine.bindPipeline(VkPipelines.main);
+
+        		if(cube.idxCount > 0)
+        		cube.bindAndDraw(commandBuffer);
+        		if(plane.idxCount > 0)
+        		plane.bindAndDraw(commandBuffer);
+
+        		vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+        		VkTess tess = VkTess.instance;
+                Engine.clearDescriptorSet1();
+                Engine.bindPipeline(VkPipelines.guiDebug);
+        		tess.setColorRGBAF(1.0f, 0.8f, 0.0f, 0.6f);
+                tess.add(200, 100, 0);
+                tess.add(100, 100, 0);
+                tess.add(100, 200, 0);
+                tess.add(200, 200, 0);
+        		tess.drawQuads();
+                
+//                Engine.setDescriptorSet1(this.descTextureGbufferColor);
+                Engine.setDescriptorSet1(this.descTextureCube);
+        		Engine.setPipeStateTextured2D();
+
+        		tess.setOffset(400, 50, 0);
+        		tess.setColor(-1, 255);
+        		tess.add(0, 0, 0, 0, 0);
+        		tess.add(320, 0, 0, 1, 0);
+        		tess.add(320, 320, 0, 1, 1);
+        		tess.add(0, 320, 0, 0, 1);
+        		tess.drawQuads();
+        		tess.setOffset(0, 0, 0);
+
+                Engine.clearDescriptorSet1();
+        		Engine.setPipeStateColored2D();
+        		tess.setColor(0x0, 180);
+        		tess.add(0, displayHeight-600, 0);
+        		tess.add(300, displayHeight-600, 0);
+        		tess.add(300, displayHeight, 0);
+        		tess.add(0, displayHeight, 0);
+        		tess.drawQuads();
 
 
-        Engine.pxStack.push(10, 10, 0);
-		this.font.drawString("test string hello", 0, displayHeight-40, -1, true, 1f);
-        Engine.pxStack.pop();
+                LineGUI.INST.start(4F);
+                LineGUI.INST.add(32, 32, 0, -1, 1f);
+                LineGUI.INST.add(128, 32, 0, -1, 1f);
+                LineGUI.INST.add((128-32)/2+32, 128, 0, 0xff00ff, 1f);
+                LineGUI.INST.add(32, 32, 0, -1, 1f);
+                LineGUI.INST.drawLines();
 
-        Engine.clearDescriptorSet1();
-    	Engine.bindPipeline(VkPipelines.gui);
-    	BoxGUI.reset();
-    	BoxGUI.setBox(100, 150, 200, 190);
+                Engine.pxStack.push(10, 10, 0);
+        		this.font.drawString("test string hello", 0, displayHeight-40, -1, true, 0.5f);
+                Engine.pxStack.pop();
 
-        vkCmdPushConstants(commandBuffer, VkPipelines.gui.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT, 0, BoxGUI.INST.update());
-		tess.add(0, 0, 0, 0, 1);
-		tess.add(displayWidth, 0, 0, 1, 1);
-		tess.add(displayWidth, displayHeight, 0, 1, 0);
-		tess.add(0, displayHeight, 0, 0, 0);
-		tess.drawQuads();
-        double mx = Mouse.getX();
-        double my = Mouse.getY();
-		
-        if (this.gui != null)
-        	this.gui.render(fTime, mx, my);
-		
-        vkCmdEndRenderPass(commandBuffer);
+                Engine.clearDescriptorSet1();
+                
+            	BoxGUI.reset();
+            	BoxGUI.setBox(100, 350, 200, 190);
+                BoxGUI.INST.drawQuad();
+                
+
+                double mx = Mouse.getX();
+                double my = Mouse.getY();
+        		
+                if (this.gui != null)
+                	this.gui.render(fTime, mx, my);
+        		
+                vkCmdEndRenderPass(commandBuffer);
+            }
+        }
         
         err = vkEndCommandBuffer(commandBuffer);
         if (err != VK_SUCCESS) {
@@ -487,22 +541,21 @@ public class TexturedMesh_VK extends GameBase {
     }
 	@Override
 	public void rebuildRenderCommands() {
-		forceRedraw = true;
+		{
+			if (this.frameBuffer != null) {
+				this.frameBuffer.destroy();
+			}
+			this.frameBuffer.build(VkRenderPasses.passgbuffer, windowWidth, windowHeight);
+//			if (this.frameBufferScene != null) {
+//				this.frameBufferScene.destroy();
+//			}
+//			this.frameBufferScene.build(VkRenderPasses.passGBufferSubpass, windowWidth, windowHeight);
+
+		}
+		
+		
 		vkContext.resetRenderCommandPool();
     	int nFrameBuffers = vkContext.swapChain.numImages;
-		this.recorded = new boolean[nFrameBuffers];
-    	if (cube == null || cube.length != nFrameBuffers) {
-    		for (int i = 0; this.cube != null && i < cube.length; i++) {
-    			cube[i].destroy();
-    			plane[i].destroy();
-    		}
-    		this.cube = new VkTesselatorState[nFrameBuffers];
-    		this.plane = new VkTesselatorState[nFrameBuffers];
-    		for (int i = 0; i < plane.length; i++) {
-    			cube[i] = new VkTesselatorState(vkContext).tag("cube_frame_"+i);
-    			plane[i] = new VkTesselatorState(vkContext).tag("plane_frame_"+i);
-    		}
-    	}
         try ( MemoryStack stack = stackPush() ) {
             VkCommandBufferAllocateInfo cmdBufAllocateInfo = VkInitializers.commandBufferAllocInfo(
             		vkContext.renderCommandPool, nFrameBuffers);
@@ -517,7 +570,8 @@ public class TexturedMesh_VK extends GameBase {
                 renderCommandBuffers[i] = new VkCommandBuffer(pCommandBuffer.get(i), vkContext.device);
             }
         }
-
+		updateDescriptorSets();
+		needsRedraw=true;
 	}
 
 	private void destroyCommandBuffers() {
@@ -531,14 +585,19 @@ public class TexturedMesh_VK extends GameBase {
 	}
 	public void shutdown() {
     	destroyCommandBuffers();
-    	initCrap.destroy();
-    	VkPipelines.destroyShutdown(vkContext);
     	vkDestroyImageView(vkContext.device, textureView, null);
     	vkDestroySampler(vkContext.device, sampler, null);
+    	this.frameBuffer.destroy();
+    	this.frameBufferScene.destroy();
     	this.texture.destroy();
     	super.shutdown();
+    	cmdBufInfo.free();
     }
 	@Override
 	protected void onWheelScroll(long window, double xoffset, double yoffset) {
+		if (this.gui != null) {
+
+            this.gui.onWheelScroll(xoffset, yoffset);
+		}
 	}
 }

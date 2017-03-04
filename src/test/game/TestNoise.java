@@ -61,7 +61,7 @@ public class TestNoise extends GameBase {
         		this.stats, 
         		displayWidth, displayHeight, 
         		windowWidth, windowHeight, 
-        		guiWidth, guiHeight);
+        		Engine.getGuiWidth(), Engine.getGuiHeight());
         setTitle(s);
 		reloadtick--;
 		if (reloadtick <= 0) {

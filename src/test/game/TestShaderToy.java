@@ -66,7 +66,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
         		this.stats, 
         		displayWidth, displayHeight, 
         		windowWidth, windowHeight, 
-        		guiWidth, guiHeight);
+        		Engine.getGuiWidth(), Engine.getGuiHeight());
 
 		if (VR.getFB(0) != null) {
 
@@ -75,7 +75,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
             		displayWidth, displayHeight, 
             		windowWidth, windowHeight, 
             		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
-            		guiWidth, guiHeight);
+            		Engine.getGuiWidth(), Engine.getGuiHeight());
 		}
         setTitle(s);
 

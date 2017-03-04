@@ -84,7 +84,7 @@ public class VRApp extends GameBase {
             		windowWidth, windowHeight, 
             		Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 
             		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
-            		guiWidth, guiHeight);
+            		Engine.getGuiWidth(), Engine.getGuiHeight());
             setTitle(s);
 		}
 		tick--;
@@ -189,7 +189,7 @@ public class VRApp extends GameBase {
             Engine.checkGLError("VR.Submit");
             setGUIViewport();
             Engine.checkGLError("setGUIProjection");
-            VR.drawFullscreenCompanion(guiWidth, guiHeight);
+            VR.drawFullscreenCompanion(Engine.getGuiWidth(), Engine.getGuiHeight());
             Engine.checkGLError("drawFullscreenCompanion");
         }
 		glClear(GL_DEPTH_BUFFER_BIT);

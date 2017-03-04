@@ -13,8 +13,7 @@ import org.lwjgl.vulkan.*;
 
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.util.Stats;
-import nidefawl.qubes.vulkan.VKContext;
-import nidefawl.qubes.vulkan.VulkanErr;
+import nidefawl.qubes.vulkan.*;
 
 public class EmptyVKGame extends GameBase {
 	static {
@@ -146,7 +145,7 @@ public class EmptyVKGame extends GameBase {
         VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
                 .pNext(NULL)
-                .renderPass(vkContext.getMainRenderPass())
+                .renderPass(VkRenderPasses.passSubpassSwapchain.get())
                 .pClearValues(clearValues);
         VkRect2D renderArea = renderPassBeginInfo.renderArea();
         renderArea.offset()

@@ -568,7 +568,7 @@ public class ParticlePerformanceTest2 extends GameBase {
             		windowWidth, windowHeight, 
             		Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 
             		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
-            		guiWidth, guiHeight);
+            		Engine.getGuiWidth(), Engine.getGuiHeight());
             setTitle(s);
 		}
 		tick--;
