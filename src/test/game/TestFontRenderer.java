@@ -95,28 +95,28 @@ public class TestFontRenderer extends GameBase {
 			Shaders.textured.enable();
 			FontRenderer fr = FontRenderer.get(0, 18, 1);
 			float tw = fr.getStringWidth(text);
-			fr.drawString(text, ((float)Game.displayWidth-tw)/2.0f, 110, -1, true, 1.0f);
+			fr.drawString(text, ((float)Engine.displayWidth-tw)/2.0f, 110, -1, true, 1.0f);
 		}
 		{
 			String text = "----";
 			Shaders.textured.enable();
 			FontRenderer fr = FontRenderer.get(0, 10, 1);
-			fr.drawString(text, ((float)Game.displayWidth)/2.0f, 140, -1, true, 1.0f, 2);
+			fr.drawString(text, ((float)Engine.displayWidth)/2.0f, 140, -1, true, 1.0f, 2);
 			float tw = fr.getStringWidth(text);
-			fr.drawString(text, ((float)Game.displayWidth-tw)/2.0f, 170, -1, true, 1.0f);
+			fr.drawString(text, ((float)Engine.displayWidth-tw)/2.0f, 170, -1, true, 1.0f);
 		}
 		{
 			String text = "----";
 			Shaders.textured.enable();
 			FontRenderer fr = FontRenderer.get(0, 10, 1);
-			fr.drawString(text, ((float)Game.displayWidth)/2.0f, 210, -1, true, 1.0f, 0);
+			fr.drawString(text, ((float)Engine.displayWidth)/2.0f, 210, -1, true, 1.0f, 0);
 		}
 		{
 			String text = "Right\nMulti\nLine";
 			Shaders.textured.enable();
 			FontRenderer fr = FontRenderer.get(0, 22, 1);
 			float tw = fr.getStringWidth(text);
-			fr.drawString(text, Game.displayWidth, 140, -1, true, 1.0f, 1);
+			fr.drawString(text, Engine.displayWidth, 140, -1, true, 1.0f, 1);
 		}
 		{
 			String text = "Left\nMulti\nLine";
@@ -130,13 +130,13 @@ public class TestFontRenderer extends GameBase {
 			Shaders.textured.enable();
 			FontRenderer fr = FontRenderer.get(0, 22, 1);
 			float tw = fr.getStringWidth(text);
-			fr.drawString(text, Game.displayWidth/2.0f, 340, -1, true, 1.0f, 2);
+			fr.drawString(text, Engine.displayWidth/2.0f, 340, -1, true, 1.0f, 2);
 		}
 		Shaders.colored.enable();
 		Engine.lineWidth(2.0f);
 		Tess.instance.setColorF(0xff00ff, 1.0f);
-		Tess.instance.add(Game.displayWidth/2.0f, 0);
-		Tess.instance.add(Game.displayWidth/2.0f, Game.displayHeight-1);
+		Tess.instance.add(Engine.displayWidth/2.0f, 0);
+		Tess.instance.add(Engine.displayWidth/2.0f, Engine.displayHeight-1);
 		Tess.instance.draw(GL_LINES);
 		
 	}
@@ -227,7 +227,7 @@ public class TestFontRenderer extends GameBase {
 	
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		FontRenderer.init();
 		setVSync(true);

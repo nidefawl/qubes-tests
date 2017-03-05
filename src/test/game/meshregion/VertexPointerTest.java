@@ -262,7 +262,7 @@ public class VertexPointerTest extends GameBase {
 //        list.bindVAO();
         list.draw();
         Engine.bindVAO(null);
-        GLDebugTextures.drawAll(displayWidth, displayHeight);
+        GLDebugTextures.drawAll(Engine.displayWidth, Engine.displayHeight);
         Engine.checkGLError("drawAll");
         GPUProfiler.end();
 	    Engine.setBlend(true);
@@ -329,7 +329,7 @@ public class VertexPointerTest extends GameBase {
 	}
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

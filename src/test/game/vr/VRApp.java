@@ -80,7 +80,7 @@ public class VRApp extends GameBase {
 		if (VR.getFB(0) != null&&Engine.getSceneFB() != null) {
             String s = String.format("%s - Display %dx%d - Window %dx%d - SceneFB %dx%d - VRFB %dx%d - Gui %dx%d", 
             		this.stats, 
-            		displayWidth, displayHeight, 
+            		Engine.displayWidth, Engine.displayHeight, 
             		windowWidth, windowHeight, 
             		Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 
             		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
@@ -196,7 +196,7 @@ public class VRApp extends GameBase {
 		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int hT = 50;
-        int yT = displayHeight-hT;
+        int yT = Engine.displayHeight-hT;
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0x333300, 0.7f);
 		Tess.instance.add(220, yT);
@@ -229,13 +229,12 @@ public class VRApp extends GameBase {
 	@Override
 	public void onWindowResize(int displayWidth, int displayHeight) {
         if (!VR_SUPPORT||isStarting) {
-            Game.displayWidth=displayWidth;
-            Game.displayHeight=displayHeight;
             setRenderResolution(displayWidth, displayHeight);
         }
 	}
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
+        Engine.updateRenderResolution(displayWidth, displayHeight);
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();
@@ -263,7 +262,7 @@ public class VRApp extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

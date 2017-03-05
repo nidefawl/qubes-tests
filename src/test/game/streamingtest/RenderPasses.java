@@ -207,7 +207,7 @@ public class RenderPasses extends GameBase {
 
 	@Override
 	public void initGame() {
-		Engine.init(EngineInitSettings.INIT_NONE.setVulkan(true).setInverseZ());
+		Engine.init(EngineInitSettings.INIT_NONE.setFBSize(windowWidth, windowHeight).setVulkan(true).setInverseZ());
         GameBase.loadingScreen = new LoadingScreen();
 		if (loadingScreen != null)
         loadingScreen.setProgress(0, 0, "Initializing");
@@ -385,7 +385,7 @@ public class RenderPasses extends GameBase {
         if (err != VK_SUCCESS) {
             throw new AssertionError("Failed to begin render command buffer: " + VulkanErr.toString(err));
         }
-        Engine.setViewport(0, 0, Game.displayWidth, Game.displayHeight);
+        Engine.setViewport(0, 0, Engine.displayWidth, Engine.displayHeight);
         Engine.beginRenderPass(commandBuffer, VkRenderPasses.passSubpassSwapchain, framebuffer, VK_SUBPASS_CONTENTS_INLINE);
         Engine.setDescriptorSet1(this.descriptorSet2);
         Engine.bindPipeline(VkPipelines.main);
@@ -409,10 +409,10 @@ public class RenderPasses extends GameBase {
         Engine.clearDescriptorSet1();
 		Engine.setPipeStateColored2D();
 		tess.setColor(0x0, 180);
-		tess.add(0, displayHeight-600, 0);
-		tess.add(300, displayHeight-600, 0);
-		tess.add(300, displayHeight, 0);
-		tess.add(0, displayHeight, 0);
+		tess.add(0, Engine.displayHeight-600, 0);
+		tess.add(300, Engine.displayHeight-600, 0);
+		tess.add(300, Engine.displayHeight, 0);
+		tess.add(0, Engine.displayHeight, 0);
 		tess.drawQuads();
 
 
@@ -424,7 +424,7 @@ public class RenderPasses extends GameBase {
         LineGUI.INST.drawLines();
 
         Engine.pxStack.push(10, 10, 0);
-		this.font.drawString("test string hello", 0, displayHeight-40, -1, true, 1f);
+		this.font.drawString("test string hello", 0, Engine.displayHeight-40, -1, true, 1f);
         Engine.pxStack.pop();
 
         Engine.clearDescriptorSet1();
@@ -447,7 +447,7 @@ public class RenderPasses extends GameBase {
         }
     }
 	@Override
-	public void rebuildRenderCommands() {
+	public void rebuildRenderCommands(int width, int height) {
 		forceRedraw = true;
 		vkContext.resetRenderCommandPool();
     	int nFrameBuffers = vkContext.swapChain.numImages;

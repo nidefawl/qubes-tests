@@ -44,7 +44,7 @@ public class TexturedMesh_GL extends GameBase {
 	private int nextBuffer;
 	@Override
 	public void initGame() {
-        Engine.init(EngineInitSettings.INIT_NONE.setInverseZ().setInverseYOpengl());
+        Engine.init(EngineInitSettings.INIT_NONE.setFBSize(windowWidth, windowHeight).setInverseZ().setInverseYOpengl());
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

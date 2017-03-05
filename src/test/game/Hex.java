@@ -224,15 +224,15 @@ public class Hex extends GameBase {
 		int hZ = GameMath.lhToZ(l)+zPos;
 		HexBiome hexMouseOver = biomes.getPos(GameMath.toLong(hX, hZ));
 
-		Engine.pxStack.push(displayWidth/2, displayHeight/2, 0);
+		Engine.pxStack.push(Engine.displayWidth/2, Engine.displayHeight/2, 0);
 		//		System.out.println(floatzpos1);
 //		rOffsetX-=GameMath.floor(rOffsetZ/2.0);
 		Engine.pxStack.translate(rOffsetX*scaleWidth, rOffsetZ*scaleHeight, 0);
 
 		int xrange = 6;
 		int zrange = 6;
-		xrange=1+(int) (displayWidth/(scaleWidth*2));
-		zrange=1+(int) (displayHeight/(scaleHeight*2));
+		xrange=1+(int) (Engine.displayWidth/(scaleWidth*2));
+		zrange=1+(int) (Engine.displayHeight/(scaleHeight*2));
 		for (int z = -zrange-1; z <= +zrange; z++) {
 			int xOffset = GameMath.floor(z/2.0);
 			for (int x = -xrange-xOffset-1; x <= +xrange-xOffset; x++){
@@ -331,7 +331,7 @@ public class Hex extends GameBase {
         Engine.drawFullscreenQuad();
 		Shaders.textured.enable();
         String str = String.format("%.2f %.2f", hexMouseOver.getCenterX(), hexMouseOver.getCenterY());
-        fr.drawString(str, displayWidth/2, displayHeight-4, -1, true, 1, 2);
+        fr.drawString(str, Engine.displayWidth/2, Engine.displayHeight-4, -1, true, 1, 2);
 //		float scale = (float) this.zoom;
 //		float newScale = (float) ((1/16f)*scale);
 //    	this.mapOffsetX = this.mapOffsetZ = 0;
@@ -340,12 +340,12 @@ public class Hex extends GameBase {
 	}
 	public double mousePosX() {
         double mouseX=Mouse.getX()-rOffsetX*scaleWidth;
-		double mX=(((mouseX/displayWidth)-0.5)*displayWidth) / scaleWidth;
+		double mX=(((mouseX/Engine.displayWidth)-0.5)*Engine.displayWidth) / scaleWidth;
 		return mX*biomes.width;
 	}
 	public double mousePosY() {
         double mouseY=Mouse.getY()-rOffsetZ*scaleHeight;
-		double mY=(((mouseY/displayHeight)-0.5)*displayHeight) / scaleHeight;
+		double mY=(((mouseY/Engine.displayHeight)-0.5)*Engine.displayHeight) / scaleHeight;
 		return mY*biomes.height;
 	}
 	public void render2(float f) {
@@ -514,8 +514,8 @@ public class Hex extends GameBase {
 		if (ortho) {
 			left = 10;
 			top = 10;
-			rWidth = displayWidth - 20;
-			rHeight = displayHeight - 20;
+			rWidth = Engine.displayWidth - 20;
+			rHeight = Engine.displayHeight - 20;
 //			BufferedMatrix mat = Engine.getMatSceneP();
 //			mat.setZero();
 //			int scale = (int) (1024*(4)+zoom*128);
@@ -545,16 +545,16 @@ public class Hex extends GameBase {
         float winX, winY;
 
         if (this.movement.grabbed()) {
-            winX = (float) displayWidth/2.0F;
-            winY = (float) displayHeight/2.0F;
+            winX = (float) windowWidth/2.0F;
+            winY = (float) windowHeight/2.0F;
         } else {
             winX = (float) Mouse.getX();
-            winY = (float) (displayHeight-Mouse.getY());
-            if (winX < 0) winX = 0; if (winX > displayWidth) winX = 1;
-            if (winY < 0) winY = 0; if (winY > displayHeight) winY = 1;
+            winY = (float) (windowHeight-Mouse.getY());
+            if (winX < 0) winX = 0; if (winX > windowWidth) winX = 1;
+            if (winY < 0) winY = 0; if (winY > windowHeight) winY = 1;
         }
 		hit = null;
-		mouseOverRight.updateMouseFromScreenPos(winX, winY, displayWidth, displayHeight, null);
+		mouseOverRight.updateMouseFromScreenPos(winX, winY, windowWidth, windowHeight, null);
         if (mouseOverRight.vDir != null) {
         	Vector3f tmp = new Vector3f(0, 1, 0); //plane normal
         	
@@ -610,7 +610,7 @@ public class Hex extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
@@ -666,12 +666,12 @@ public class Hex extends GameBase {
     }
 	public double mousePosX2() {
         double mouseX=Mouse.getX()-rOffsetX*scaleWidth;
-		double mX=(((mouseX/displayWidth)-0.5)*displayWidth) / scaleWidth;
+		double mX=(((mouseX/Engine.displayWidth)-0.5)*Engine.displayWidth) / scaleWidth;
 		return mX;
 	}
 	public double mousePosY2() {
         double mouseY=Mouse.getY()-rOffsetZ*scaleHeight;
-		double mY=(((mouseY/displayHeight)-0.5)*displayHeight) / scaleHeight;
+		double mY=(((mouseY/Engine.displayHeight)-0.5)*Engine.displayHeight) / scaleHeight;
 		return mY;
 	}
 	@Override

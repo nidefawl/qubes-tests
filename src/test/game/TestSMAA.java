@@ -61,7 +61,7 @@ public class TestSMAA extends GameBase {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
         	}
         	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB, false);
-        	smaa.init(displayWidth, displayHeight);
+        	smaa.init(Engine.displayWidth, Engine.displayHeight);
         	Shaders.initShaders();
         	initShaders();
 		}
@@ -344,7 +344,7 @@ public class TestSMAA extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

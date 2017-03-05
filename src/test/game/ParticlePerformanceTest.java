@@ -275,7 +275,7 @@ public class ParticlePerformanceTest extends GameBase {
 	@Override
 	public void initGame() {
 		GameBase.loadingScreen = new LoadingScreen();
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
         EntityModel.preInit();
         EntityModel.postInit();
@@ -608,13 +608,12 @@ public class ParticlePerformanceTest extends GameBase {
 	@Override
 	public void onWindowResize(int displayWidth, int displayHeight) {
         if (!VR_SUPPORT||isStarting) {
-            Game.displayWidth=displayWidth;
-            Game.displayHeight=displayHeight;
             setRenderResolution(displayWidth, displayHeight);
         }
 	}
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
+        Engine.updateRenderResolution(displayWidth, displayHeight);
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
 			if (sceneFB != null) sceneFB.release();
@@ -648,7 +647,7 @@ public class ParticlePerformanceTest extends GameBase {
 
             String s = String.format("%s - Display %dx%d - Window %dx%d - SceneFB %dx%d - VRFB %dx%d - Gui %dx%d", 
             		this.stats, 
-            		displayWidth, displayHeight, 
+            		Engine.displayWidth, Engine.displayHeight, 
             		windowWidth, windowHeight, 
             		Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 
             		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
@@ -801,8 +800,7 @@ public class ParticlePerformanceTest extends GameBase {
             FrameBuffer.unbindFramebuffer();
             VR.Submit();
             Engine.checkGLError("VR.Submit");
-            Game.displayWidth=windowWidth;
-            Game.displayHeight=windowHeight;
+            Engine.updateRenderResolution(windowWidth, windowHeight);
             updateProjection();
             if (Game.GL_ERROR_CHECKS) Engine.checkGLError("setGUIProjection");
             VR.drawFullscreenCompanion(windowWidth, windowHeight);
@@ -812,7 +810,7 @@ public class ParticlePerformanceTest extends GameBase {
 		Engine.setBlend(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int yT = 400;
-        int hT = displayHeight-yT;
+        int hT = Engine.displayHeight-yT;
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);
 		Tess.instance.add(600, yT);
@@ -828,7 +826,7 @@ public class ParticlePerformanceTest extends GameBase {
 		this.font.drawString("selected shader: "+selShader, 10, y+=30, -1, true, 1.0f, 0);	
 		this.font.drawString("selected format: "+selFormat, 10, y+=30, -1, true, 1.0f, 0);	
 		if (this.error != null) {
-			this.font.drawString(this.error, Game.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
+			this.font.drawString(this.error, Engine.displayWidth/2, 30, 0xff8989, true, 1.0f, 2);	
 		}
 		Engine.setBlend(false);
 		// Engine.checkGLError("drawAll");

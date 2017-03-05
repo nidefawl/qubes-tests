@@ -252,7 +252,7 @@ public class SkyRendererTest extends GameBase {
 	public void initGame() {
 		this.skyrenderer = new SkyRenderer();
 		this.skyrenderer.preinit();
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		this.skyrenderer.init();
 		TextureManager.getInstance().init();
 		setVSync(false);

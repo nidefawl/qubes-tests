@@ -96,7 +96,7 @@ public class ModelAdjuster extends GameBase {
 		FrameBuffer.unbindFramebuffer();
         glClearColor(0,0,0,0);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        GLDebugTextures.drawAll(displayWidth, displayHeight);
+        GLDebugTextures.drawAll(Engine.displayWidth, Engine.displayHeight);
         Engine.checkGLError("drawAll");
         double mx = Mouse.getX();
         double my = Mouse.getY();
@@ -135,7 +135,7 @@ public class ModelAdjuster extends GameBase {
         this.gui = gui;
         if (this.gui != null) {
             this.gui.setPos(0, 0);
-            this.gui.setSize(displayWidth, displayHeight);
+            this.gui.setSize(Engine.getGuiWidth(), Engine.getGuiHeight());
             this.gui.initGui(this.gui.firstOpen);
             this.gui.firstOpen = false;
             if (Mouse.isGrabbed()) {
@@ -219,7 +219,7 @@ public class ModelAdjuster extends GameBase {
 	@Override
 	public void initGame() {
 		Engine.RENDER_SETTINGS.ssr = 0;
-        Engine.init(INIT_MODELVIEWER);
+        Engine.init(INIT_MODELVIEWER.setFBSize(windowWidth, windowHeight));
 		TextureManager.getInstance().init();
         EntityModel.preInit();
         EntityModel.postInit();

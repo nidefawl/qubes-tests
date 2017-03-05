@@ -89,9 +89,9 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
 		Engine.setBlend(true);
 //		
 //
-		this.text.width = Math.min(500, displayWidth - 100);
-		this.text.height = displayHeight - 100;
-		this.text.xPos = (int) ((displayWidth-this.text.width)/2.0f);
+		this.text.width = Math.min(500, Engine.displayWidth - 100);
+		this.text.height = Engine.displayHeight - 100;
+		this.text.xPos = (int) ((Engine.displayWidth-this.text.width)/2.0f);
 		this.text.yPos = 50;
 		Shaders.gui.enable();
 		boolean drawShadow=true;
@@ -137,7 +137,7 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
 
 
 	private void updateMousePos() {
-		boolean inside = !(Mouse.getX()<0||Mouse.getX()>displayWidth||Mouse.getY()<0||Mouse.getY()>displayHeight);
+		boolean inside = !(Mouse.getX()<0||Mouse.getX()>windowWidth||Mouse.getY()<0||Mouse.getY()>windowHeight);
 		if (!inside) {
 			down = false;
 		}
@@ -146,7 +146,7 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
 			lastMy = (float) Mouse.getY();
 		}
 		this.shaderHeavy.enable();
-		this.shaderHeavy.setProgramUniform2f("iMouse", GameMath.clamp((float)lastMx, 0f, displayWidth), GameMath.clamp(displayHeight-1-(float)lastMy, 0f, displayHeight));
+		this.shaderHeavy.setProgramUniform2f("iMouse", GameMath.clamp((float)lastMx, 0f, windowWidth), GameMath.clamp(windowHeight-1-(float)lastMy, 0f, windowHeight));
 
 	}
 	@Override
@@ -216,7 +216,7 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		FontRenderer.init();
 		this.font = FontRenderer.get(0, 12, 0);

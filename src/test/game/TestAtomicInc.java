@@ -105,7 +105,7 @@ public class TestAtomicInc extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
@@ -124,8 +124,8 @@ public class TestAtomicInc extends GameBase {
         glBindImageTexture(0, this.glR32UITexture, 0, false, 0, GL15.GL_READ_WRITE, GL30.GL_R32UI);
         shaderAtomicInc.enable();
 
-        int tw = Game.displayWidth;
-        int th = Game.displayHeight;
+        int tw = Engine.displayWidth;
+        int th = Engine.displayHeight;
         float x = 0;
         float y = 0;
         Tess tess = Tess.instance;
@@ -144,8 +144,8 @@ public class TestAtomicInc extends GameBase {
 
 	@Override
 	public void lateInitGame() {
-		this.uploadUintBuf = Memory.createIntBuffer(displayHeight*displayWidth);
-		this.glR32UITexture = GL.genStorage(displayWidth, displayHeight, GL30.GL_R32UI, GL_LINEAR, GL12.GL_CLAMP_TO_EDGE);
+		this.uploadUintBuf = Memory.createIntBuffer(Engine.displayHeight*Engine.displayWidth);
+		this.glR32UITexture = GL.genStorage(Engine.displayWidth, Engine.displayHeight, GL30.GL_R32UI, GL_LINEAR, GL12.GL_CLAMP_TO_EDGE);
     	Engine.checkGLError("genStorage");
 		this.glAtomicCounterBuffer = GL15.glGenBuffers();
 		GL15.glBindBuffer(GL42.GL_ATOMIC_COUNTER_BUFFER, this.glAtomicCounterBuffer);

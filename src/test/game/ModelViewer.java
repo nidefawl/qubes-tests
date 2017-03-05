@@ -346,7 +346,7 @@ public class ModelViewer extends GameBase {
         
         
         if (GLDebugTextures.isShow())
-        	GLDebugTextures.drawAll(displayWidth, displayHeight);
+        	GLDebugTextures.drawAll(Engine.displayWidth, Engine.displayHeight);
         Engine.checkGLError("drawAll");
         double mx = Mouse.getX();
         double my = Mouse.getY();
@@ -385,7 +385,7 @@ public class ModelViewer extends GameBase {
         this.gui = gui;
         if (this.gui != null) {
             this.gui.setPos(0, 0);
-            this.gui.setSize(displayWidth, displayHeight);
+            this.gui.setSize(Engine.getGuiWidth(), Engine.getGuiHeight());
             this.gui.initGui(this.gui.firstOpen);
             this.gui.firstOpen = false;
             if (Mouse.isGrabbed()) {
@@ -545,7 +545,7 @@ public class ModelViewer extends GameBase {
 	@Override
 	public void initGame() {
 		Engine.RENDER_SETTINGS.ssr = 0;
-        Engine.init(INIT_MODELVIEWER);
+        Engine.init(INIT_MODELVIEWER.setFBSize(windowWidth, windowHeight));
 		TextureManager.getInstance().init();
         EntityModel.preInit();
         EntityModel.postInit();

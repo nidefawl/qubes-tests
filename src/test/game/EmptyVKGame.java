@@ -200,7 +200,7 @@ public class EmptyVKGame extends GameBase {
         return renderCommandBuffers;
     }
 	@Override
-	public void rebuildRenderCommands() {
+	public void rebuildRenderCommands(int width, int height) {
 		vkContext.resetRenderCommandPool();
 		destroyCommandBuffers();
         renderCommandBuffers = createRenderCommandBuffers();

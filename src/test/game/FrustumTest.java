@@ -137,7 +137,7 @@ public class FrustumTest extends GameBase {
         Shaders.tonemap.enable();
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
         Engine.drawFullscreenQuad();
-        GLDebugTextures.drawAll(displayWidth, displayHeight);
+        GLDebugTextures.drawAll(Engine.displayWidth, Engine.displayHeight);
         Engine.checkGLError("drawAll");
 	}
 
@@ -187,7 +187,7 @@ public class FrustumTest extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

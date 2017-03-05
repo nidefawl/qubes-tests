@@ -220,7 +220,7 @@ public class FinalRendererTest extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init(EngineInitSettings.INIT_SKY_FINAL);
+        Engine.init(EngineInitSettings.INIT_SKY_FINAL.setFBSize(windowWidth, windowHeight));
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

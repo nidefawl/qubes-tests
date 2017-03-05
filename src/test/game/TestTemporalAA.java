@@ -186,7 +186,7 @@ public class TestTemporalAA extends GameBase {
 		Engine.setBlend(true);
 		int hT = n.size() * 18 + 22;
 //		int hT = debugVars.size() * 18 + 50;
-		int yT = displayHeight - hT;
+		int yT = Engine.displayHeight - hT;
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);
 		Tess.instance.add(600, yT);
@@ -211,7 +211,7 @@ public class TestTemporalAA extends GameBase {
 		}
 		y += 30;
 		if (this.error != null) {
-			this.font.drawString(this.error, Game.displayWidth / 2, 30, 0xff8989, true, 1.0f, 2);
+			this.font.drawString(this.error, Engine.displayWidth / 2, 30, 0xff8989, true, 1.0f, 2);
 		}
 		Engine.setBlend(false);
 	}
@@ -306,7 +306,7 @@ public class TestTemporalAA extends GameBase {
     		smaa.releaseAll(EResourceType.FRAMEBUFFER);
     	}
     	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, false, temporal);
-    	smaa.init(displayWidth, displayHeight);
+    	smaa.init(Engine.fbWidth(), Engine.fbHeight());
 	}
 	@Override
 	public void tick() {
@@ -315,7 +315,7 @@ public class TestTemporalAA extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(true);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);

@@ -64,7 +64,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
         String s = String.format("%s - Display %dx%d - Window %dx%d - Gui %dx%d", 
         		this.stats, 
-        		displayWidth, displayHeight, 
+        		Engine.displayWidth, Engine.displayHeight, 
         		windowWidth, windowHeight, 
         		Engine.getGuiWidth(), Engine.getGuiHeight());
 
@@ -72,7 +72,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
              s = String.format("%s - Display %dx%d - Window %dx%d - VRFB %dx%d - Gui %dx%d", 
             		this.stats, 
-            		displayWidth, displayHeight, 
+            		Engine.displayWidth, Engine.displayHeight, 
             		windowWidth, windowHeight, 
             		VR.getFB(0).getWidth(), VR.getFB(0).getHeight(), 
             		Engine.getGuiWidth(), Engine.getGuiHeight());
@@ -160,8 +160,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 				VR.updatePose(f);
 			}
 			Engine.checkGLError("VR.Submit");
-			Game.displayWidth = windowWidth;
-			Game.displayHeight = windowHeight;
+			Engine.updateRenderResolution(windowWidth, windowHeight);
 			updateProjection();
 			if (Game.GL_ERROR_CHECKS)
 				Engine.checkGLError("setGUIProjection");
@@ -172,7 +171,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 		List<Var> debugVars = this.shaderHeavy.readDebugVars();
 		Engine.setBlend(true);
 		int hT = debugVars.size() * 18 + 50;
-		int yT = displayHeight - hT;
+		int yT = Engine.displayHeight - hT;
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);
 		Tess.instance.add(600, yT);
@@ -190,14 +189,14 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 		}
 		y += 30;
 		if (this.error != null) {
-			this.font.drawString(this.error, Game.displayWidth / 2, 30, 0xff8989, true, 1.0f, 2);
+			this.font.drawString(this.error, Engine.displayWidth / 2, 30, 0xff8989, true, 1.0f, 2);
 		}
 		Engine.setBlend(false);
 	}
 
 
 	private void updateMousePos() {
-		boolean inside = !(Mouse.getX()<0||Mouse.getX()>displayWidth||Mouse.getY()<0||Mouse.getY()>displayHeight);
+		boolean inside = !(Mouse.getX()<0||Mouse.getX()>windowWidth||Mouse.getY()<0||Mouse.getY()>windowHeight);
 		if (!inside) {
 			down = false;
 		}
@@ -206,7 +205,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 			lastMy = (float) Mouse.getY();
 		}
 		this.shaderHeavy.enable();
-		this.shaderHeavy.setProgramUniform4f("iMouse", GameMath.clamp((float)lastMx, 0f, displayWidth), GameMath.clamp(displayHeight-1-(float)lastMy, 0f, displayHeight), down ? 1 : 0, 0);
+		this.shaderHeavy.setProgramUniform4f("iMouse", GameMath.clamp((float)lastMx, 0f, windowWidth), GameMath.clamp(windowHeight-1-(float)lastMy, 0f, windowHeight), down ? 1 : 0, 0);
 
 	}
 	@Override
@@ -237,13 +236,12 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 	@Override
 	public void onWindowResize(int displayWidth, int displayHeight) {
 	    if (!VR_SUPPORT||isStarting) {
-	        Game.displayWidth=displayWidth;
-	        Game.displayHeight=displayHeight;
 	        setRenderResolution(displayWidth, displayHeight);
 	    }
 	}
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
+        Engine.updateRenderResolution(displayWidth, displayHeight);
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         	if (fb2 != null) {
@@ -301,7 +299,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		FontRenderer.init();
 		this.font = FontRenderer.get(0, 12, 0);

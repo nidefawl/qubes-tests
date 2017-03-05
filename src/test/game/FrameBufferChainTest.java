@@ -145,7 +145,7 @@ public class FrameBufferChainTest extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		reloadShaders();

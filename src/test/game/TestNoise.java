@@ -59,7 +59,7 @@ public class TestNoise extends GameBase {
 
         String s = String.format("%s - Display %dx%d - Window %dx%d - Gui %dx%d", 
         		this.stats, 
-        		displayWidth, displayHeight, 
+        		Engine.displayWidth, Engine.displayHeight,  
         		windowWidth, windowHeight, 
         		Engine.getGuiWidth(), Engine.getGuiHeight());
         setTitle(s);
@@ -183,7 +183,7 @@ public class TestNoise extends GameBase {
 
 	@Override
 	public void initGame() {
-        Engine.init();
+        Engine.init(windowWidth, windowHeight);
 		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
