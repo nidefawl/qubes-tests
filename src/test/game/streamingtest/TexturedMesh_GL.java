@@ -1,7 +1,8 @@
 package test.game.streamingtest;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.*;
+import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -38,19 +39,28 @@ public class TexturedMesh_GL extends GameBase {
 	}
 	
 	private Shader shaderTexturedLight;
-	private TesselatorState[] cubes;
-	private TesselatorState[] planes;
-	private int currentBuffer;
-	private int nextBuffer;
+	private TesselatorState cubes;
+	private TesselatorState planes;
+	private FrameBuffer frameBuffer;
+	private Shader shadowShader;
+	private Shader textured_3Dvk_shadedShader;
 	@Override
 	public void initGame() {
-        Engine.init(EngineInitSettings.INIT_NONE.setFBSize(windowWidth, windowHeight).setInverseZ().setInverseYOpengl());
+		EngineInitSettings init = EngineInitSettings.INIT_NONE;
+		init.setFBSize(windowWidth, windowHeight).setInverseZ();
+		init.initShadowProj=true;
+        Engine.init(init);
 		TextureManager.getInstance().init();
-		setVSync(false);
+		setVSync(true);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		glEnable(GL_DEPTH_TEST);
 		Engine.setBlend(false);
 		this.cameraController.set(-1.58f, 0.01f, 1.50f, 0.00f, 17.64f);
+		this.frameBuffer = new FrameBuffer(Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
+		this.frameBuffer.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA8);
+		this.frameBuffer.setClearColor(GL_COLOR_ATTACHMENT0, 0F, 0F, 0F, 0F);
+		this.frameBuffer.setHasDepthAttachment();
+		this.frameBuffer.setup(null);
 	}
 
 	@Override
@@ -69,9 +79,8 @@ public class TexturedMesh_GL extends GameBase {
 		tinfo.setUVMode(UVCoordMode.CLAMP);
 		tinfo.setAnisotropicFilterLevel(16);
 		this.texture = TextureManager.getInstance().makeCompressedTexture(tinfo);
-		currentBuffer = 0;
-		cubes = new TesselatorState[32];
-		planes = new TesselatorState[32];
+		cubes = new TesselatorState(GL15.GL_STATIC_DRAW);
+		planes = new TesselatorState(GL15.GL_STATIC_DRAW);
 //		Tess tess = Tess.instance;
 //		tess.setNormals(0, 0, 1);
 //		tess.setColorF(-1, 1.0f);
@@ -96,13 +105,22 @@ public class TexturedMesh_GL extends GameBase {
         try {
             AssetManager assetMgr = AssetManager.getInstance();
             Shader new_texturedLight = assetMgr.loadShader(newshaders, "debug/textured_light");
+            Shader shadow = assetMgr.loadShader(newshaders, "shadow/shadow_solid");
+            Shader textured_3Dvk_shaded = assetMgr.loadShader(newshaders, "textured_3Dvk_shaded");
             shaders.release();
             SimpleResourceManager tmp = shaders;
             shaders = newshaders;
             newshaders = tmp;
+            shadowShader = shadow;
+            textured_3Dvk_shadedShader = textured_3Dvk_shaded;
             this.shaderTexturedLight = new_texturedLight;
             this.shaderTexturedLight.enable();
             this.shaderTexturedLight.setProgramUniform1i("tex0", 0);
+            this.textured_3Dvk_shadedShader.enable();
+            textured_3Dvk_shadedShader.setProgramUniform1i("samplerColor", 0);
+            textured_3Dvk_shadedShader.setProgramUniform1i("texShadow", 1);
+            shadowShader.enable();
+            shadowShader.setProgramUniformMatrix4("model_matrix", false, Engine.getIdentityMatrix().get(), false);
             Shader.disable();
         } catch (ShaderCompileError e) {
             newshaders.release();
@@ -113,88 +131,113 @@ public class TexturedMesh_GL extends GameBase {
 	boolean update = true;
 	@Override
 	public void preRenderUpdate(float f) {
+        Engine.getSunLightModel().setTime(7850);
+//      Engine.getSunLightModel().setTime(1700+(int)((ticksran+f)*32));
+      Engine.getSunLightModel().updateFrame(0);
+      Engine.setLightPosition(Engine.getSunLightModel().getLightPosition());
 		this.cameraController.orientCamera(Engine.camera, movement, VR_SUPPORT, f);
+		Engine.updateShadowProjections(f);
         Engine.updateCamera();
         UniformBuffer.updateUBO(null, f);
-//        Vector4f v = Vector4f.pool(0, 0, -33);
-//        v.w = 1;
-//        Matrix4f.transform(Engine.getMatSceneP(), v, v);
-//        System.out.println(v);
         if (update) {
-            Tess tess = Tess.instance;
-    		int l = 12;
-    		float d = 5;
-    		for (int x = -l; x <= l; x++) {
-    			for (int z = -l; z <= l; z++) {
-    				for (int y = -l; y <= l; y++) {
-    					tess.setOffset(x*d, y*d, z*d);
-    					tess.setNormals(0, 0, 1);
-    					tess.add( 1,  1, 1, 1, 1);
-    					tess.add(-1,  1, 1, 0, 1);
-    					tess.add(-1, -1, 1, 0, 0);
-    					tess.add( 1, -1, 1, 1, 0);
-    					tess.setNormals(0, 0, -1);
-    					tess.add(-1, -1, -1, 0, 0);
-    					tess.add(-1,  1, -1, 0, 1);
-    					tess.add( 1,  1, -1, 1, 1);
-    					tess.add( 1, -1, -1, 1, 0);
-    					tess.setNormals(0, 1, 0);
-    					tess.add(-1,  1, -1, 0, 0);
-    					tess.add(-1,  1,  1, 0, 1);
-    					tess.add( 1,  1,  1, 1, 1);
-    					tess.add( 1,  1, -1, 1, 0);
-    					tess.setNormals(0, -1, 0);
-    					tess.add(-1, -1,  1, 0, 1);
-    					tess.add(-1, -1, -1, 0, 0);
-    					tess.add( 1, -1, -1, 1, 0);
-    					tess.add( 1, -1,  1, 1, 1);
-    					tess.setNormals(1, 0, 0);
-    					tess.add( 1, -1, -1, 0, 1);
-    					tess.add( 1, -1,  1, 0, 0);
-    					tess.add( 1,  1,  1, 1, 0);
-    					tess.add( 1,  1, -1, 1, 1);
-    					tess.setNormals(-1, 0, 0);
-    					tess.add(-1, -1, -1, 0, 1);
-    					tess.add(-1, -1,  1, 0, 0);
-    					tess.add(-1,  1,  1, 1, 0);
-    					tess.add(-1,  1, -1, 1, 1);
-    				}
-    				
-    			}
-    		}
-    		if (cubes[nextBuffer] == null) {
-    			cubes[nextBuffer] = new TesselatorState(GL15.GL_STATIC_DRAW);
-    		}
-    		if (planes[nextBuffer] == null) {
-    			planes[nextBuffer] = new TesselatorState(GL15.GL_STATIC_DRAW);
-    		}
-    		tess.draw(GL11.GL_QUADS, cubes[nextBuffer]);
-    		tess.setOffset(0, 0, 0);
-    		tess.setNormals(0, 0, 1);
-    		tess.add( 2,  2, 3.5f, 1, 1);
-    		tess.add(-2,  2, 3.5f, 0, 1);
-    		tess.add(-2, -2, 3.5f, 0, 0);
-    		tess.add( 2, -2, 3.5f, 1, 0);
-    		tess.draw(GL11.GL_QUADS, planes[nextBuffer]);
+        	
+        	update = false;
+        	drawScene();
+        	
         }
 	}
+	void drawScene() {
 
-	int nframes = 0;
+        Tess tess = Tess.instance;
+		int l = 3;
+		float d = 5;
+		float scale = 4.0f;
+		for (int x = -l; x <= l; x++) {
+			for (int z = -l; z <= l; z++) {
+				for (int y = -l; y <= l; y++) {
+					tess.setOffset(x*d*scale, y*d*scale, z*d*scale);
+					tess.setNormals(0, 0, 1);
+					tess.add( scale,  scale, scale, 1, 1);
+					tess.add(-scale,  scale, scale, 0, 1);
+					tess.add(-scale, -scale, scale, 0, 0);
+					tess.add( scale, -scale, scale, 1, 0);
+					tess.setNormals(0, 0, -1);
+					tess.add(-scale, -scale, -scale, 0, 0);
+					tess.add(-scale,  scale, -scale, 0, 1);
+					tess.add( scale,  scale, -scale, 1, 1);
+					tess.add( scale, -scale, -scale, 1, 0);
+					tess.setNormals(0, 1, 0);
+					tess.add(-scale,  scale, -scale, 0, 0);
+					tess.add(-scale,  scale,  scale, 0, 1);
+					tess.add( scale,  scale,  scale, 1, 1);
+					tess.add( scale,  scale, -scale, 1, 0);
+					tess.setNormals(0, -1, 0);
+					tess.add(-scale, -scale,  scale, 0, 1);
+					tess.add(-scale, -scale, -scale, 0, 0);
+					tess.add( scale, -scale, -scale, 1, 0);
+					tess.add( scale, -scale,  scale, 1, 1);
+					tess.setNormals(1, 0, 0);
+					tess.add( scale, -scale,  scale, 0, 0);
+					tess.add( scale, -scale, -scale, 0, 1);
+					tess.add( scale,  scale, -scale, 1, 1);
+					tess.add( scale,  scale,  scale, 1, 0);
+					tess.setNormals(-1, 0, 0);
+					tess.add(-scale, -scale, -scale, 0, 1);
+					tess.add(-scale, -scale,  scale, 0, 0);
+					tess.add(-scale,  scale,  scale, 1, 0);
+					tess.add(-scale,  scale, -scale, 1, 1);
+				}
+				
+			}
+		}
+		tess.draw(GL11.GL_QUADS, cubes);
+		tess.setOffset(0, 0, 0);
+		tess.setNormals(0, 0, 1);
+		tess.add( 2,  2, 3.5f, 1, 1);
+		tess.add(-2,  2, 3.5f, 0, 1);
+		tess.add(-2, -2, 3.5f, 0, 0);
+		tess.add( 2, -2, 3.5f, 1, 0);
+		tess.draw(GL11.GL_QUADS, planes);
+    
+	}
+
 	@Override
 	public void render(float f) {
+		Engine.setZBufferSetting();
+		this.frameBuffer.bind();
+
+		this.frameBuffer.clearFrameBuffer();
+		int mapsize = Engine.getShadowMapTextureSize() / 2;
+        Engine.setViewport(0, 0, mapsize, mapsize);
+        shadowShader.enable();
+        shadowShader.setProgramUniform1i("shadowSplit", 0);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        float mult = Engine.isInverseZ?-1:1;
+        glPolygonOffset(1.1f*mult, 2.f*mult);
+		this.cubes.drawQuads();
+        Engine.setViewport(mapsize, 0, mapsize, mapsize);
+        shadowShader.setProgramUniform1i("shadowSplit", 1);
+        glPolygonOffset(1.2f*mult, 2.f*mult);
+		this.cubes.drawQuads();
+        Engine.setViewport(0, mapsize, mapsize, mapsize);
+        shadowShader.setProgramUniform1i("shadowSplit", 2);
+        glPolygonOffset(1.4f*mult, 2.f*mult);
+		this.cubes.drawQuads();
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        Engine.setViewport(0, 0, Engine.fbWidth(), Engine.fbHeight());
+		FrameBuffer.unbindFramebuffer();
 		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-		shaderTexturedLight.enable();
+		textured_3Dvk_shadedShader.enable();
         GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, texture);
-        if (nframes++ > 2) {
-    		this.cubes[currentBuffer].drawQuads();
-    		this.planes[currentBuffer].drawQuads();
-        }
+        GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, this.frameBuffer.getDepthTex());
+        
+		this.cubes.drawQuads();
+		this.planes.drawQuads();
+		Engine.restoreZBufferSetting();
 	}
 
 	@Override
 	public void postRenderUpdate(float f) {
-        currentBuffer = (currentBuffer+1)%cubes.length;
-        nextBuffer = (currentBuffer+2)%cubes.length;
 
 	}
 	
@@ -231,8 +274,8 @@ public class TexturedMesh_GL extends GameBase {
 
 		if (action == GLFW.GLFW_PRESS) {
 			switch (key) {
-			case GLFW.GLFW_KEY_SPACE:
-				update = !update;
+			case GLFW.GLFW_KEY_ENTER:
+				update = true;
 				break;
 			}
 		}

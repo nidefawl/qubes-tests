@@ -28,8 +28,7 @@ import nidefawl.qubes.models.render.QModelBatchedRender;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
-import nidefawl.qubes.texture.array.BlockTextureArray;
-import nidefawl.qubes.texture.array.TextureArray;
+import nidefawl.qubes.texture.array.TextureArrays;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;
 import nidefawl.qubes.vr.VR;
@@ -878,7 +877,7 @@ public class ParticlePerformanceTest2 extends GameBase {
 			p.setTextureOffset(toffx/8F, toffz/8F);
 			p.setRot(r.nextFloat(), r.nextFloat(), r.nextFloat());
 			p.setRotSpeed(r.nextFloat()*rotRange, r.nextFloat()*rotRange, r.nextFloat()*rotRange);
-			p.setTex(r.nextInt(BlockTextureArray.getInstance().totalSlots));
+			p.setTex(r.nextInt(TextureArrays.blockTextureArray.totalSlots));
 			particlesAlive.add(p);
 			if (particlesAlive.size()+1>=maxSprites)
 				return;

@@ -20,6 +20,7 @@ import nidefawl.qubes.perf.GPUProfiler;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.*;
 import nidefawl.qubes.texture.array.TextureArray;
+import nidefawl.qubes.texture.array.impl.gl.TextureArrayGL;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;
 import test.game.*;
@@ -419,7 +420,7 @@ public class VertexPointerTest extends GameBase {
 
 
 	BlockFaceAttr attr = new BlockFaceAttr(); 
-	TextureArray arr;
+	TextureArrayGL arr;
 	
     private TesselatorState skybox1;
     private TesselatorState skybox2;
@@ -434,7 +435,7 @@ public class VertexPointerTest extends GameBase {
         }
 		
 		final int texSize = 128;
-		arr = new TextureArray(10) {
+		arr = new TextureArrayGL(10) {
 
 			@Override
 			protected void uploadTextures() {

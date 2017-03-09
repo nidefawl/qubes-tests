@@ -24,7 +24,7 @@ import nidefawl.qubes.render.post.HBAOPlus;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.texture.TextureUtil;
-import nidefawl.qubes.texture.array.TextureArray;
+import nidefawl.qubes.texture.array.impl.gl.TextureArrayGL;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vec3D;
 import nidefawl.qubes.vr.VR;
@@ -120,7 +120,7 @@ public class TestNoise extends GameBase {
 	}
 	
 	boolean hadContext = false;
-	private TextureArray arr;
+	private TextureArrayGL arr;
 	private Shader shader;
 	@Override
 	public void setRenderResolution(int displayWidth, int displayHeight) {
@@ -228,7 +228,7 @@ public class TestNoise extends GameBase {
 		Tess.instance.add(4*w, 0, d*4);
 		Tess.instance.add(4*w, 0, -d*4);
 		Tess.instance.draw(GL_QUADS, this.tessState);
-		this.arr = new TextureArray(64) {
+		this.arr = new TextureArrayGL(64) {
 			
 			@Override
 			protected void uploadTextures() {

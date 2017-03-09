@@ -417,11 +417,7 @@ public class ParticlePerformanceTest extends GameBase {
         loadingScreen.setProgress(0, 1f, "Loading... Entity Models");
         EntityModelManager.getInstance().reload();
         loadingScreen.setProgress(0, 1f, "Loading... Item Textures");
-        TextureArray[] arrays = {
-                ItemTextureArray.getInstance(),
-                BlockNormalMapArray.getInstance(),
-                BlockTextureArray.getInstance(),
-        };
+        TextureArray[] arrays = TextureArrays.init();
         for (int i = 0; i < arrays.length; i++) {
             final TextureArray arr = arrays[i];
             AsyncTasks.submit(new AsyncTask() {
@@ -901,7 +897,7 @@ public class ParticlePerformanceTest extends GameBase {
 			p.setTextureOffset(toffx/8F, toffz/8F);
 			p.setRot(r.nextFloat(), r.nextFloat(), r.nextFloat());
 			p.setRotSpeed(r.nextFloat()*rotRange, r.nextFloat()*rotRange, r.nextFloat()*rotRange);
-			p.setTex(r.nextInt(BlockTextureArray.getInstance().totalSlots));
+			p.setTex(r.nextInt(TextureArrays.blockTextureArray.totalSlots));
 			particles.add(p);
 			if (particles.size()+1>=MAX_PARTICLES)
 				return;
