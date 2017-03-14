@@ -1,8 +1,6 @@
 package test.game.meshregion;
 
-import org.lwjgl.opengl.*;
-
-import nidefawl.qubes.gl.*;
+import nidefawl.qubes.gl.GLTriBuffer;
 
 public class VMeshBufferInterleaved extends VMeshBuffer {
 

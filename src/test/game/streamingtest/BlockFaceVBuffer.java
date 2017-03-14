@@ -13,13 +13,13 @@ import nidefawl.qubes.vulkan.VKContext;
 import nidefawl.qubes.vulkan.VkBuffer;
 
 public class BlockFaceVBuffer {
-    protected static ReallocIntBuffer[] buffers = new ReallocIntBuffer[NUM_PASSES*4];
-    protected static ReallocIntBuffer[] idxShortBuffers = new ReallocIntBuffer[NUM_PASSES*4];
+    protected ReallocIntBuffer[] buffers = new ReallocIntBuffer[NUM_PASSES*4];
+    protected ReallocIntBuffer[] idxShortBuffers = new ReallocIntBuffer[NUM_PASSES*4];
     public static long totalBytes = 0;
     public static long totalBytesPass[] = new long[NUM_PASSES];
     static int nextBuffer = 0;
-    static final int REGION_DIST = 0;
-	int size = 1;
+    static final int REGION_DIST = 6;
+	float size = 0.5f;
 
 	BlockFaceAttr attr = new BlockFaceAttr(); 
 	private VertexBuffer bufferDataVertex;
@@ -36,6 +36,12 @@ public class BlockFaceVBuffer {
 	
 	public void init(VKContext ctxt) {
 
+        for (int i = 0; i < idxShortBuffers.length; i++) {
+            idxShortBuffers[i] = new ReallocIntBuffer();
+        }
+        for (int i = 0; i < buffers.length; i++) {
+            buffers[i] = new ReallocIntBuffer();
+        }
 		this.bufferDataVertex = new VertexBuffer(1024 * 1024);
 		this.vkbuffersV = new VkBuffer[NUM_PASSES];
 		this.vkbuffersI = new VkBuffer[NUM_PASSES];
@@ -47,22 +53,23 @@ public class BlockFaceVBuffer {
 
 	public void redraw() {
 		int k =4;
-		int r = 1;
+		float r = 1f;
 		int n = 0;
         int rOffset = (k*2+1);
         bufferDataVertex.reset();
 		for (int x = -REGION_DIST; x <= REGION_DIST; x++) {
 			for (int z = -REGION_DIST; z <= REGION_DIST; z++) {
-				int rX = x*rOffset*r*1;
-				int rZ = z*rOffset*r*1;
+				float rX = x*rOffset*r*1;
+				float rZ = z*rOffset*r*1;
 				for (int i = -k; i <= k; i++) {
 					for (int j = -k; j <= k; j++) {
-						drawFace(rX+i*r, 0, rZ+j*r, n++%9);
+						drawFace(rX+i*r, 0, rZ+j*r, n++%12);
 			        	attr.put(bufferDataVertex);
 					}
 				}
 			}
 		}
+		uploadBuffer(0, bufferDataVertex, 0);
 	}
 
 	private void drawFace(float i, float j, float k, int tex) {
@@ -158,7 +165,7 @@ public class BlockFaceVBuffer {
             pointer[0] = this.vkbuffersV[pass].getBuffer();
             offset[0] = 0;
             vkCmdBindVertexBuffers(commandBuffer, 0, pointer, offset);
-            vkCmdBindIndexBuffer(commandBuffer, this.vkbuffersI[pass].getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBuffer, this.vkbuffersI[pass].getBuffer(), 0, VK_INDEX_TYPE_UINT32);
             vkCmdDrawIndexed(commandBuffer, this.elementCount[pass], 1, 0, 0, 0);
     	}
     }

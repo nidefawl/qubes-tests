@@ -14,8 +14,7 @@ import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.perf.GPUProfiler;
-import nidefawl.qubes.render.FinalRenderer;
-import nidefawl.qubes.render.SkyRenderer;
+import nidefawl.qubes.render.*;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
@@ -132,33 +131,33 @@ public class FinalRendererTest extends GameBase {
 		
 		glDisable(GL11.GL_DEPTH_TEST);
 		Engine.setBlend(false);
-		Engine.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), f);
+		RenderersGL.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), f);
 		setSceneViewport();
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
-		Engine.skyRenderer.renderSkybox();
+		RenderersGL.skyRenderer.renderSkybox();
 		//enable depth test + mask then draw something solid
         
         
 		Engine.checkGLError("Pass0");
-		Engine.outRenderer.renderDeferred(f, 0);
+		RenderersGL.outRenderer.renderDeferred(f, 0);
 		
 		
-        if (Engine.outRenderer.getSsr() > 0) {
-            Engine.outRenderer.raytraceSSR();
+        if (RenderersGL.outRenderer.getSsr() > 0) {
+        	RenderersGL.outRenderer.raytraceSSR();
         }
 
-        if (Engine.outRenderer.getSsr() > 0) {
-            Engine.outRenderer.combineSSR();
+        if (RenderersGL.outRenderer.getSsr() > 0) {
+        	RenderersGL.outRenderer.combineSSR();
         }
         Engine.setBlend(false);
         glDisable(GL_DEPTH_TEST);
         Engine.enableDepthMask(false);
-        Engine.outRenderer.renderBlur();
+        RenderersGL.outRenderer.renderBlur();
 
 
         
-        Engine.outRenderer.renderBloom();
+        RenderersGL.outRenderer.renderBloom();
         glEnable(GL_DEPTH_TEST);
         Engine.enableDepthMask(true);
         
@@ -167,11 +166,11 @@ public class FinalRendererTest extends GameBase {
 		
 
 
-        FrameBuffer fbOut = Engine.outRenderer.renderTonemap();
+        FrameBuffer fbOut = RenderersGL.outRenderer.renderTonemap();
 		FrameBuffer.unbindFramebuffer();
 		glClearColor(0, 0, 0, 0);
 		glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        Engine.outRenderer.renderAA(fbOut.getTexture(0), null, true);
+		RenderersGL.outRenderer.renderAA(fbOut.getTexture(0), null, true);
         
 
 //		Shaders.tonemap.enable();

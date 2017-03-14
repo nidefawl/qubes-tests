@@ -26,7 +26,7 @@ import nidefawl.qubes.vec.*;
 import test.game.*;
 
 public class VertexPointerTest extends GameBase {
-    static final int REGION_DIST = 24;
+    static final int REGION_DIST = 4;
 	final CameraController cameraController = new CameraController();
 	private FrameBuffer sceneFB;
     public FrameBuffer  fbDeferred;
@@ -83,7 +83,7 @@ public class VertexPointerTest extends GameBase {
 				}
 			});
             
-            Shader sky = assetMgr.loadShader(newshaders, "sky/sky");
+            Shader sky = assetMgr.loadShader(newshaders, "sky/skybox_generate");
             shaders.release();
             SimpleResourceManager tmp = shaders;
             shaders = newshaders;
@@ -358,7 +358,7 @@ public class VertexPointerTest extends GameBase {
 		        }
 				for (int i = -k; i <= k; i++) {
 					for (int j = -k; j <= k; j++) {
-						drawFace(rX+i*r, 0, rZ+j*r, n++%9);
+						drawFace(rX+i*r, 0, rZ+j*r, n++%4);
 				        for (int m = 0; m < lists.length; m++) {
 				        	lists[m].addFace(attr);
 				        }

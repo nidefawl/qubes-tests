@@ -28,6 +28,7 @@ import nidefawl.qubes.models.EntityModelManager;
 import nidefawl.qubes.models.qmodel.*;
 import nidefawl.qubes.models.render.*;
 import nidefawl.qubes.perf.GPUProfiler;
+import nidefawl.qubes.render.RenderersGL;
 import nidefawl.qubes.render.post.HBAOPlus;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
@@ -174,11 +175,11 @@ public class ModelViewer extends GameBase {
 		Engine.setBlend(false);
 		Engine.enableDepthMask(false);
 		glDisable(GL11.GL_DEPTH_TEST);
-		Engine.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), fTime);
+		RenderersGL.skyRenderer.renderSky(Engine.getSunLightModel().getDayTime(), fTime);
 		setSceneViewport();
 		Engine.getSceneFB().bind();
 		Engine.getSceneFB().clearFrameBuffer();
-        Engine.skyRenderer.renderSkybox();
+		RenderersGL.skyRenderer.renderSkybox();
 		glEnable(GL11.GL_DEPTH_TEST);
 		Engine.enableDepthMask(true);
 		this.shaderModelSingle.enable();
@@ -226,14 +227,14 @@ public class ModelViewer extends GameBase {
         Engine.setBlend(false);
         glDisable(GL_DEPTH_TEST);
         Engine.enableDepthMask(false);
-        Engine.outRenderer.renderDeferred(fTime, 0);
+        RenderersGL.outRenderer.renderDeferred(fTime, 0);
         Engine.checkGLError("renderDeferred");
-        Engine.outRenderer.copySceneDepthBuffer();
+        RenderersGL.outRenderer.copySceneDepthBuffer();
         Engine.checkGLError("copySceneDepthBuffer");
 
-        Engine.outRenderer.renderBlur();
+        RenderersGL.outRenderer.renderBlur();
 //        Engine.checkGLError("renderBlur");
-        Engine.outRenderer.renderBloom();
+        RenderersGL.outRenderer.renderBloom();
         Engine.checkGLError("renderBloom");
 		
 		
@@ -271,7 +272,7 @@ public class ModelViewer extends GameBase {
 //        glEnable(GL_DEPTH_TEST);
 //        Engine.enableDepthMask(true);
 		
-        FrameBuffer fbOut = Engine.outRenderer.renderTonemap();
+        FrameBuffer fbOut = RenderersGL.outRenderer.renderTonemap();
         
         
 
@@ -286,7 +287,7 @@ public class ModelViewer extends GameBase {
 //        GL30.glBlitFramebuffer(0, 0, Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), 0, 0, Engine.getSceneFB().getWidth(), Engine.getSceneFB().getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 //        FrameBuffer.unbindReadFramebuffer();
 //        Engine.checkGLError("renderTonemap");
-        Engine.outRenderer.renderAA(fbOut.getTexture(0), null, false);
+        RenderersGL.outRenderer.renderAA(fbOut.getTexture(0), null, false);
 //        Engine.checkGLError("renderAA");
 
 		glClear(GL11.GL_DEPTH_BUFFER_BIT);

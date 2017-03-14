@@ -14,6 +14,7 @@ import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.render.SkyRenderer;
+import nidefawl.qubes.render.impl.gl.SkyRendererGL;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureManager;
@@ -250,7 +251,7 @@ public class SkyRendererTest extends GameBase {
 
 	@Override
 	public void initGame() {
-		this.skyrenderer = new SkyRenderer();
+		this.skyrenderer = new SkyRendererGL();
 		this.skyrenderer.preinit();
         Engine.init(windowWidth, windowHeight);
 		this.skyrenderer.init();
@@ -262,7 +263,7 @@ public class SkyRendererTest extends GameBase {
 
 
 	private FontRenderer font;
-	private SkyRenderer skyrenderer;
+	private SkyRendererGL skyrenderer;
 	public static float WEATHER = 0.40f;
 	public static int TIME = 5850;
 	@Override
