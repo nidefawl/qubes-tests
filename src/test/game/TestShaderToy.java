@@ -160,8 +160,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 				VR.updatePose(f);
 			}
 			Engine.checkGLError("VR.Submit");
-			Engine.updateRenderResolution(windowWidth, windowHeight);
-			updateProjection();
+            setWindowViewport();
 			if (Game.GL_ERROR_CHECKS)
 				Engine.checkGLError("setGUIProjection");
 			VR.drawFullscreenCompanion(windowWidth, windowHeight);

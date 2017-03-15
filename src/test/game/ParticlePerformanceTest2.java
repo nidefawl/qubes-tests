@@ -711,8 +711,7 @@ public class ParticlePerformanceTest2 extends GameBase {
             FrameBuffer.unbindFramebuffer();
             VR.Submit();
             Engine.checkGLError("VR.Submit");
-            Engine.updateRenderResolution(windowWidth, windowHeight);
-            updateProjection();
+            setWindowViewport();
             if (Game.GL_ERROR_CHECKS) Engine.checkGLError("setGUIProjection");
             VR.drawFullscreenCompanion(windowWidth, windowHeight);
             Engine.checkGLError("drawFullscreenCompanion");

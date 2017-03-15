@@ -70,9 +70,6 @@ public class TexturedMesh_VK extends GameBase {
 	private VkDescriptor descTextureGbufferColor;
 	
 	
-    VkCommandBufferBeginInfo cmdBufInfo = VkCommandBufferBeginInfo.calloc()
-            .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
-            .pNext(NULL).flags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 	VkViewport.Buffer viewport = VkViewport.calloc(1);
 
 	TextureBinMips texture2dData1;
@@ -148,7 +145,10 @@ public class TexturedMesh_VK extends GameBase {
 		int currentBuffer = VKContext.currentBuffer;
 		VkCommandBuffer buffer = renderCommandBuffers[currentBuffer];
 		vkResetCommandBuffer(buffer, 0);
+		Engine.beginCommandBuffer(buffer);
         createRenderCommandBuffers(buffer, currentBuffer, f);
+
+        Engine.endCommandBuffer();
 		this.vkContext.submitCommandBuffer(buffer);
 	}
 	
@@ -480,11 +480,6 @@ public class TexturedMesh_VK extends GameBase {
 		}
 	}
     private void createRenderCommandBuffers(VkCommandBuffer commandBuffer, int currentBuf, float fTime) {
-
-        int err = vkBeginCommandBuffer(commandBuffer, this.cmdBufInfo);
-        if (err != VK_SUCCESS) {
-            throw new AssertionError("Failed to begin render command buffer: " + VulkanErr.toString(err));
-        }
         Engine.updateRenderResolution(Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
         Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
 
@@ -495,7 +490,7 @@ public class TexturedMesh_VK extends GameBase {
             PushConstantBuffer buf = PushConstantBuffer.INST;
             int mapSize = Engine.getShadowMapTextureSize()/2;
             
-            Engine.beginRenderPass(commandBuffer, VkRenderPasses.passShadow, this.frameBufferShadow.get(), VK_SUBPASS_CONTENTS_INLINE);
+            Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow.get(), VK_SUBPASS_CONTENTS_INLINE);
 
             Engine.clearDescriptorSet(1);
             Engine.bindPipeline(VkPipelines.shadowSolid);
@@ -517,7 +512,7 @@ public class TexturedMesh_VK extends GameBase {
             buf.setInt(16, 2);
             vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
 			cubesShadow.bindAndDraw(commandBuffer);   
-            Engine.endRenderPass(commandBuffer);
+            Engine.endRenderPass();
         } else {
         	System.err.println("SKIPPED, framebuffer is not sized");
         	System.err.printf("%dx%d vs %dx%d vs %dx%d vs %dx%d\n", 
@@ -536,13 +531,13 @@ public class TexturedMesh_VK extends GameBase {
             if (this.frameBufferScene.getWidth() == windowWidth&&this.frameBufferScene.getHeight() == windowHeight)
             {
             	
-                Engine.beginRenderPass(commandBuffer, VkRenderPasses.passTerrain, this.frameBufferScene.get(), VK_SUBPASS_CONTENTS_INLINE);
+                Engine.beginRenderPass(VkRenderPasses.passTerrain, this.frameBufferScene.get(), VK_SUBPASS_CONTENTS_INLINE);
 //                
                 Engine.setDescriptorSet(1, this.descTextureTerrain);
                 Engine.setDescriptorSet(2, Engine.descriptorSetUboConstants);
                 Engine.bindPipeline(VkPipelines.terrain);
                 this.vBuf.draw(commandBuffer, 0);
-                vkCmdEndRenderPass(commandBuffer);
+                Engine.endRenderPass();
                 Engine.clearDescriptorSet(2);
             } else {
             	System.err.println("SKIPPED, framebuffer is not sized");
@@ -554,7 +549,7 @@ public class TexturedMesh_VK extends GameBase {
 
             }
             {
-                Engine.beginRenderPass(commandBuffer, VkRenderPasses.passFramebuffer, this.frameBuffer.get(), VK_SUBPASS_CONTENTS_INLINE);
+                Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer.get(), VK_SUBPASS_CONTENTS_INLINE);
                 
                 Engine.setDescriptorSet(1, this.descTextureCubeShadowMap);
                 Engine.bindPipeline(VkPipelines.main);
@@ -614,7 +609,7 @@ public class TexturedMesh_VK extends GameBase {
                 if (this.gui != null)
                 	this.gui.render(fTime, mx, my);
         		
-                Engine.endRenderPass(commandBuffer);
+                Engine.endRenderPass();
                 
             }
 
@@ -622,10 +617,6 @@ public class TexturedMesh_VK extends GameBase {
             vkContext.swapChain.blitFramebufferAndPreset(commandBuffer, frameBuffer, 1);
         }
         
-        err = vkEndCommandBuffer(commandBuffer);
-        if (err != VK_SUCCESS) {
-            throw new AssertionError("Failed to end render command buffer: " + VulkanErr.toString(err));
-        }
     }
 	@Override
 	public void rebuildRenderCommands(int width, int height) {
@@ -684,7 +675,6 @@ public class TexturedMesh_VK extends GameBase {
     	this.frameBufferShadow.destroy();
     	this.texture.destroy();
     	super.shutdown();
-    	cmdBufInfo.free();
     }
 	@Override
 	protected void onWheelScroll(long window, double xoffset, double yoffset) {
