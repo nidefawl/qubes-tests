@@ -240,15 +240,15 @@ public class TexturedMesh_VK extends GameBase {
 
     		{
     			if (this.frameBufferScene != null) {
-                    Engine.vkContext.orphanResource(this.frameBufferScene);
+    				this.frameBufferScene.destroy();
         			this.frameBufferScene.build(VkRenderPasses.passTerrain, displayWidth, displayHeight);
     			}
     			if (this.frameBuffer != null) {
-                    Engine.vkContext.orphanResource(this.frameBuffer);
+    				this.frameBuffer.destroy();
         			this.frameBuffer.build(VkRenderPasses.passFramebuffer, displayWidth, displayHeight);
     			}
     			if (this.frameBufferShadow != null) {
-                    Engine.vkContext.orphanResource(this.frameBufferShadow);
+    				this.frameBufferShadow.destroy();
         			this.frameBufferShadow.build(VkRenderPasses.passShadow, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
 
     			}
