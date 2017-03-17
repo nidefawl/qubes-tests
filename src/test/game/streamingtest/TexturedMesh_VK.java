@@ -1,24 +1,17 @@
 package test.game.streamingtest;
 
 
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.LongBuffer;
 
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.*;
-import nidefawl.qubes.async.AsyncTask;
-import nidefawl.qubes.async.AsyncTasks;
 import nidefawl.qubes.font.FontRenderer;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gui.GuiTest;
@@ -30,9 +23,7 @@ import nidefawl.qubes.input.Mouse;
 import nidefawl.qubes.render.gui.BoxGUI;
 import nidefawl.qubes.render.gui.LineGUI;
 import nidefawl.qubes.shader.UniformBuffer;
-import nidefawl.qubes.texture.TMgr;
 import nidefawl.qubes.texture.TextureBinMips;
-import nidefawl.qubes.texture.array.TextureArray;
 import nidefawl.qubes.texture.array.TextureArrays;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vulkan.*;
@@ -249,15 +240,15 @@ public class TexturedMesh_VK extends GameBase {
 
     		{
     			if (this.frameBufferScene != null) {
-    				this.frameBufferScene.destroy();
+                    Engine.vkContext.orphanResource(this.frameBufferScene);
         			this.frameBufferScene.build(VkRenderPasses.passTerrain, displayWidth, displayHeight);
     			}
     			if (this.frameBuffer != null) {
-    				this.frameBuffer.destroy();
+                    Engine.vkContext.orphanResource(this.frameBuffer);
         			this.frameBuffer.build(VkRenderPasses.passFramebuffer, displayWidth, displayHeight);
     			}
     			if (this.frameBufferShadow != null) {
-    				this.frameBufferShadow.destroy();
+                    Engine.vkContext.orphanResource(this.frameBufferShadow);
         			this.frameBufferShadow.build(VkRenderPasses.passShadow, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
 
     			}
@@ -464,7 +455,7 @@ public class TexturedMesh_VK extends GameBase {
 			this.cameraController.tickUpdate();
 		}
 	}
-    private void createRenderCommandBuffers(VkCommandBuffer commandBuffer, float fTime) {
+    private void createRenderCommandBuffers(CommandBuffer commandBuffer, float fTime) {
         Engine.updateRenderResolution(Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
         Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
 
@@ -475,7 +466,7 @@ public class TexturedMesh_VK extends GameBase {
             PushConstantBuffer buf = PushConstantBuffer.INST;
             int mapSize = Engine.getShadowMapTextureSize()/2;
             
-            Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow.get(), VK_SUBPASS_CONTENTS_INLINE);
+            Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow, VK_SUBPASS_CONTENTS_INLINE);
 
             Engine.clearDescriptorSet(1);
             Engine.bindPipeline(VkPipelines.shadowSolid);
@@ -516,7 +507,7 @@ public class TexturedMesh_VK extends GameBase {
             if (this.frameBufferScene.getWidth() == windowWidth&&this.frameBufferScene.getHeight() == windowHeight)
             {
             	
-                Engine.beginRenderPass(VkRenderPasses.passTerrain, this.frameBufferScene.get(), VK_SUBPASS_CONTENTS_INLINE);
+                Engine.beginRenderPass(VkRenderPasses.passTerrain, this.frameBufferScene, VK_SUBPASS_CONTENTS_INLINE);
 //                
                 Engine.setDescriptorSet(1, this.descTextureTerrain);
                 Engine.setDescriptorSet(2, Engine.descriptorSetUboConstants);
@@ -534,14 +525,14 @@ public class TexturedMesh_VK extends GameBase {
 
             }
             {
-                Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer.get(), VK_SUBPASS_CONTENTS_INLINE);
+                Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer, VK_SUBPASS_CONTENTS_INLINE);
                 
                 Engine.setDescriptorSet(1, this.descTextureCubeShadowMap);
                 Engine.bindPipeline(VkPipelines.main);
 
-        		if(cube.idxCount > 0)
+        		if(cube.vertexcount > 0)
         		cube.bindAndDraw(commandBuffer);
-        		if(plane.idxCount > 0)
+        		if(plane.vertexcount > 0)
         		plane.bindAndDraw(commandBuffer);
 
 
