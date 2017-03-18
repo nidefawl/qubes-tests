@@ -83,6 +83,7 @@ public class TexturedMesh_VK extends GameBase {
 	public void onStatsUpdated() {
 		String stats = lastFPS+" ("+String.format("%.5fms", Stats.avgFrameTime)+") bytes uploaded: "+Stats.uploadBytes;
 		System.out.println(stats);
+		System.out.println(""+Stats.callsBindDescSets+","+Stats.callsBindPipeline);
 //		setTitle(stats);
 //		AssetManager assetManager = AssetManagerClient.getInstance();
 //		VkShader n = vkContext.loadCompileGLSL(assetManager, "shaders/textured.fsh", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -125,7 +126,13 @@ public class TexturedMesh_VK extends GameBase {
 //    				forceRedraw = true;
 //    				Arrays.fill(recorded, false);
     				return;
-    			}
+				case GLFW.GLFW_KEY_ENTER:
+					showGUI(new GuiTest());
+	//				renderModeReRecord = !renderModeReRecord;
+	//				forceRedraw = true;
+	//				Arrays.fill(recorded, false);
+					return;
+				}
     		}
         }
 	}
@@ -509,12 +516,12 @@ public class TexturedMesh_VK extends GameBase {
             	
                 Engine.beginRenderPass(VkRenderPasses.passTerrain, this.frameBufferScene, VK_SUBPASS_CONTENTS_INLINE);
 //                
-                Engine.setDescriptorSet(1, this.descTextureTerrain);
-                Engine.setDescriptorSet(2, Engine.descriptorSetUboConstants);
+                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureTerrain);
+                Engine.setDescriptorSet(VkDescLayouts.CONSTANTS_DESC_IDX, Engine.descriptorSetUboConstants);
                 Engine.bindPipeline(VkPipelines.terrain);
                 this.vBuf.draw(commandBuffer, 0);
                 Engine.endRenderPass();
-                Engine.clearDescriptorSet(2);
+                Engine.clearDescriptorSet(VkDescLayouts.CONSTANTS_DESC_IDX);
             } else {
             	System.err.println("SKIPPED, framebuffer is not sized");
             	System.err.printf("%dx%d vs %dx%d vs %dx%d vs %dx%d\n", 
@@ -527,7 +534,7 @@ public class TexturedMesh_VK extends GameBase {
             {
                 Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer, VK_SUBPASS_CONTENTS_INLINE);
                 
-                Engine.setDescriptorSet(1, this.descTextureCubeShadowMap);
+                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureCubeShadowMap);
                 Engine.bindPipeline(VkPipelines.main);
 
         		if(cube.vertexcount > 0)
@@ -537,9 +544,9 @@ public class TexturedMesh_VK extends GameBase {
 
 
         		VkTess tess = VkTess.instance;
-                
+                Engine.clearDepth();
 //                Engine.setDescriptorSet(1, this.descTextureShadowDepth);
-                Engine.setDescriptorSet(1, this.descTextureGbufferColor);
+                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureGbufferColor);
                 Engine.bindPipeline(VkPipelines.debugShader);
 
 //        		tess.setOffset(400, 50, 0);
@@ -551,7 +558,7 @@ public class TexturedMesh_VK extends GameBase {
         		tess.drawQuads();
         		tess.setOffset(0, 0, 0);
 
-                Engine.clearDescriptorSet(1);
+                Engine.clearDescriptorSet(VkDescLayouts.TEX_DESC_IDX);
         		Engine.setPipeStateColored2D();
         		tess.setColor(0x0, 180);
         		tess.add(300, windowHeight-600, 0);
@@ -572,14 +579,14 @@ public class TexturedMesh_VK extends GameBase {
         		this.font.drawString("test string hello", 0, Engine.displayHeight-40, -1, true, 0.5f);
                 Engine.pxStack.pop();
 
-                Engine.clearDescriptorSet(1);
+                Engine.clearDescriptorSet(VkDescLayouts.TEX_DESC_IDX);
                 
             	BoxGUI.reset();
             	BoxGUI.setBox(100, 350, 200, 190);
                 BoxGUI.INST.drawQuad();
 
                 {
-                    Engine.setDescriptorSet(1, this.descTextureItem);
+                    Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureItem);
                     Engine.setPipeStateItem();
                     float x = 400;
                     float y = 400;

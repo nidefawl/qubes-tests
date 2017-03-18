@@ -5,12 +5,10 @@ import static org.lwjgl.vulkan.VK10.*;
 
 import org.lwjgl.vulkan.VkCommandBuffer;
 
-import nidefawl.qubes.gl.ReallocIntBuffer;
-import nidefawl.qubes.gl.VertexBuffer;
+import nidefawl.qubes.gl.*;
 import nidefawl.qubes.meshing.BlockFaceAttr;
 import nidefawl.qubes.vec.Dir;
-import nidefawl.qubes.vulkan.VKContext;
-import nidefawl.qubes.vulkan.VkBuffer;
+import nidefawl.qubes.vulkan.*;
 
 public class BlockFaceVBuffer {
     protected ReallocIntBuffer[] buffers = new ReallocIntBuffer[NUM_PASSES*4];
@@ -24,13 +22,11 @@ public class BlockFaceVBuffer {
 	BlockFaceAttr attr = new BlockFaceAttr(); 
 	private VertexBuffer bufferDataVertex;
     public int[]     vertexCount   = new int[NUM_PASSES];
-    public int[]     elementCount   = new int[NUM_PASSES];
     public boolean[] hasPass       = new boolean[NUM_PASSES];
     public boolean hasAnyPass;
     private int shadowDrawMode;
     long alloc[] = new long[NUM_PASSES];
-	private VkBuffer[] vkbuffersI;
-	private VkBuffer[] vkbuffersV;
+	private BufferPair[] vkbuffers;
 	public BlockFaceVBuffer() {
 	}
 	
@@ -43,12 +39,11 @@ public class BlockFaceVBuffer {
             buffers[i] = new ReallocIntBuffer();
         }
 		this.bufferDataVertex = new VertexBuffer(1024 * 1024);
-		this.vkbuffersV = new VkBuffer[NUM_PASSES];
-		this.vkbuffersI = new VkBuffer[NUM_PASSES];
-		for (int i = 0; i < NUM_PASSES; i++) {
-			this.vkbuffersV[i] = new VkBuffer(ctxt).tag("blockface_"+i+"_vertex");
-			this.vkbuffersI[i] = new VkBuffer(ctxt).tag("blockface_"+i+"_index");
-		}
+		this.vkbuffers = new BufferPair[NUM_PASSES];
+//		for (int i = 0; i < NUM_PASSES; i++) {
+//			this.vkbuffers[i] = new VkBuffer(ctxt).tag("blockface_"+i+"_vertex");
+//			this.vkbuffersI[i] = new VkBuffer(ctxt).tag("blockface_"+i+"_index");
+//		}
 	}
 
 	public void redraw() {
@@ -132,20 +127,11 @@ public class BlockFaceVBuffer {
         ReallocIntBuffer shBuffer = idxShortBuffers[pass];
         int intlen = buffer.storeVertexData(buf);
         int intlenIdx = buffer.storeIndexData(shBuffer);
-        this.elementCount[pass] = intlenIdx;
-
-        if (this.vkbuffersV[pass].getSize() <= intlen * 4L) {
-            System.out.println("Remake vbuffer with size "+(intlen * 4L));
-            this.vkbuffersV[pass].destroy();
-            this.vkbuffersV[pass].create(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, intlen * 4L, true);
-        }
-        if (this.vkbuffersI[pass].getSize() <= intlenIdx * 4L) {
-            System.out.println("Remake ibuffer with size "+(intlenIdx * 4L));
-            this.vkbuffersI[pass].destroy();
-            this.vkbuffersI[pass].create(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, intlenIdx * 4L, true);
-        }
-        vkbuffersV[pass].upload(buf.getByteBuf(), 0);
-        vkbuffersI[pass].upload(shBuffer.getByteBuf(), 0);
+        Engine.vkContext.orphanResource(this.vkbuffers[pass]);
+        BufferPair newBuffer = Engine.vkContext.getFreeBuffer();
+        newBuffer.uploadDeviceLocal(buf.getByteBuf(), intlen, shBuffer.getByteBuf(), intlenIdx);
+        newBuffer.setElementCount(intlenIdx);
+        this.vkbuffers[pass] = newBuffer;
 
         int byteSize = (intlenIdx * 4) + (intlen * 4);
         
@@ -158,15 +144,10 @@ public class BlockFaceVBuffer {
         }
     }
 
-    long[] pointer = new long[1];
-    long[] offset = new long[1];
-    public void draw(VkCommandBuffer commandBuffer, int pass) {
-    	if (this.elementCount[pass] > 0) {
-            pointer[0] = this.vkbuffersV[pass].getBuffer();
-            offset[0] = 0;
-            vkCmdBindVertexBuffers(commandBuffer, 0, pointer, offset);
-            vkCmdBindIndexBuffer(commandBuffer, this.vkbuffersI[pass].getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-            vkCmdDrawIndexed(commandBuffer, this.elementCount[pass], 1, 0, 0, 0);
+    public void draw(CommandBuffer commandBuffer, int pass) {
+    	BufferPair n = this.vkbuffers[pass];
+    	if (n != null) {
+    		n.draw(commandBuffer);
     	}
     }
 }

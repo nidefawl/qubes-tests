@@ -267,7 +267,6 @@ public class ParticlePerformanceTest2 extends GameBase {
 		TextureManager.getInstance().init();
         EntityModel.preInit();
         EntityModel.postInit();
-		TextureManager.getInstance().init();
 		setVSync(false);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
