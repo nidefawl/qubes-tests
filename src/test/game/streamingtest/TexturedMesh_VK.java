@@ -271,7 +271,7 @@ public class TexturedMesh_VK extends GameBase {
     		{
     			if (this.frameBufferScene != null) {
     				this.frameBufferScene.destroy();
-        			this.frameBufferScene.build(VkRenderPasses.passTerrain, displayWidth, displayHeight);
+        			this.frameBufferScene.build(VkRenderPasses.passTerrain_Pass0, displayWidth, displayHeight);
     			}
     			if (this.frameBuffer != null) {
     				this.frameBuffer.destroy();
@@ -322,7 +322,7 @@ public class TexturedMesh_VK extends GameBase {
 		if (loadingScreen != null)
         loadingScreen.setProgress(0, 1, "Something done");
 		this.frameBufferScene = new FrameBuffer(vkContext);
-		this.frameBufferScene.fromRenderpass(VkRenderPasses.passTerrain, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
+		this.frameBufferScene.fromRenderpass(VkRenderPasses.passTerrain_Pass0, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		this.frameBufferShadow = new FrameBuffer(vkContext);
 		this.frameBufferShadow.fromRenderpass(VkRenderPasses.passShadow, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -399,7 +399,7 @@ public class TexturedMesh_VK extends GameBase {
 				TextureArrays.blockNormalMapArrayVK.getImageLayout());
 		
         FramebufferAttachment coloratt = this.frameBufferScene.getAtt(0);
-		this.descTextureGbufferColor.setBindingCombinedImageSampler(0, coloratt.getView(), sampler, coloratt.imageLayout);
+		this.descTextureGbufferColor.setBindingCombinedImageSampler(0, coloratt.getView(), sampler, coloratt.finalLayout);
 		
         FramebufferAttachment depthatt = this.frameBufferShadow.getAtt(0);
 		this.descTextureCubeShadowMap.setBindingCombinedImageSampler(0, 
@@ -409,19 +409,19 @@ public class TexturedMesh_VK extends GameBase {
 		this.descTextureCubeShadowMap.setBindingCombinedImageSampler(1, 
 				depthatt.getView(), 
 				samplerShadowMap, 
-				depthatt.imageLayout);
+				depthatt.finalLayout);
 
         FramebufferAttachment shadowColorAtt = this.frameBufferShadow.getAtt(1);
 		this.descTextureShadowColorDBG.setBindingCombinedImageSampler(0, 
 				this.frameBufferShadow2.getAtt(1).getView(), 
 				sampler, 
-				this.frameBufferShadow2.getAtt(1).imageLayout);
+				this.frameBufferShadow2.getAtt(1).finalLayout);
 		
 
 		this.descTextureShadowDepth.setBindingCombinedImageSampler(0, 
 				depthatt.getView(), 
 				samplerShadowMap, 
-				depthatt.imageLayout);
+				depthatt.finalLayout);
 		this.descTextureItem.setBindingCombinedImageSampler(0, 
 				TextureArrays.itemTextureArrayVK.getView(), 
 				TextureArrays.itemTextureArrayVK.getSampler(), 
@@ -578,7 +578,7 @@ public class TexturedMesh_VK extends GameBase {
             if (this.frameBufferScene.getWidth() == windowWidth&&this.frameBufferScene.getHeight() == windowHeight)
             {
             	
-                Engine.beginRenderPass(VkRenderPasses.passTerrain, this.frameBufferScene, VK_SUBPASS_CONTENTS_INLINE);
+                Engine.beginRenderPass(VkRenderPasses.passTerrain_Pass0, this.frameBufferScene, VK_SUBPASS_CONTENTS_INLINE);
                 Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureTerrain);
                 Engine.setDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX, Engine.descriptorSetUboConstants);
 //                
