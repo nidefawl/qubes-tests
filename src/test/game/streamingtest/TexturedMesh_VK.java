@@ -526,7 +526,8 @@ public class TexturedMesh_VK extends GameBase {
             buf.setInt(16, 2);
             vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
 //          Engine.clearDepth();
-            vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
+            float f = Engine.INVERSE_MAP?-1:1;
+            vkCmdSetDepthBias(commandBuffer, f*1.15f, 0.0f, f*1.15f);
 			cubesShadow.bindAndDraw(commandBuffer);   
 //            Engine.setViewport(mapSize, 0, mapSize, mapSize, 1, 0);
 //            buf.setMat4(0, Engine.getIdentityMatrix());
