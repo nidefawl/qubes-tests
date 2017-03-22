@@ -90,8 +90,8 @@ public class TestSSAO extends GameBase {
             HBAOPlus.hasContext = true;
             Engine.checkGLError("post GLNativeLib.createContext");
             Engine.resize(displayWidth, displayHeight);
-			if (buf != null) buf.release();
-			if (sceneFB != null) sceneFB.release();
+			if (buf != null) buf.destroy();
+			if (sceneFB != null) sceneFB.destroy();
 			buf = new FrameBuffer(displayWidth, displayHeight);
 			buf.setColorAtt(GL_COLOR_ATTACHMENT0, GL11.GL_RGBA8);
 //			buf.setColorTexExtFmt(GL11.GL_RGBA);

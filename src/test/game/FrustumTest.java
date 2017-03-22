@@ -161,7 +161,7 @@ public class FrustumTest extends GameBase {
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
-			if (sceneFB != null) sceneFB.release();
+			if (sceneFB != null) sceneFB.destroy();
 	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);

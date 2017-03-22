@@ -221,8 +221,8 @@ public class SkyRendererTest extends GameBase {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
             this.skyrenderer.resizeRenderer(displayWidth, displayHeight);
-			if (sceneFB != null) sceneFB.release();
-			if (fbDeferred != null) fbDeferred.release();
+			if (sceneFB != null) sceneFB.destroy();
+			if (fbDeferred != null) fbDeferred.destroy();
 	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);

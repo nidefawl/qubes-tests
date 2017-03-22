@@ -95,7 +95,7 @@ public class TestFullscreenTri extends GameBase {
     	try {
 
         	if (this.shaderTri != null) {
-        		this.shaderTri.release();
+        		this.shaderTri.destroy();
         	}
         	this.shaderTri = AssetManager.getInstance().loadShader(null, "debug/singletri");
         	this.shaderTri.enable();

@@ -128,7 +128,7 @@ public class FrameBufferChainTest extends GameBase {
             Engine.resize(displayWidth, displayHeight);
             for (int i = 0; i < buffers.length; i++) {
             	if (buffers[i] != null)
-            	buffers[i].release();
+            	buffers[i].destroy();
             	buffers[i] = new FrameBuffer(displayWidth, displayHeight);
             	buffers[i].setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA8);
                 buffers[i].setClearColor(GL_COLOR_ATTACHMENT0, 0F, 0F, 0F, 0F);

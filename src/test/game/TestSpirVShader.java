@@ -95,7 +95,7 @@ public class TestSpirVShader extends GameBase {
     	try {
 
         	if (this.shaderSpirV != null) {
-        		this.shaderSpirV.release();
+        		this.shaderSpirV.destroy();
         	}
         	this.shaderSpirV = AssetManager.getInstance().loadShaderBinary(null, "spir/SMAA_edge_frag.spv", "spir/SMAA_edge_vert.spv", null);
         	this.shaderSpirV.enable();

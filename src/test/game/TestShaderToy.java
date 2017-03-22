@@ -244,7 +244,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         	if (fb2 != null) {
-        		fb2.release();
+        		fb2.destroy();
         	}
             fb2 = new FrameBuffer(displayWidth, displayHeight);
             fb2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA8);

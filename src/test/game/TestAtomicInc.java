@@ -86,7 +86,7 @@ public class TestAtomicInc extends GameBase {
     	try {
 
         	if (this.shaderAtomicInc != null) {
-        		this.shaderAtomicInc.release();
+        		this.shaderAtomicInc.destroy();
         	}
         	this.shaderAtomicInc = AssetManager.getInstance().loadShader(null, "debug/atomicIncPixels");
         	this.shaderAtomicInc.enable();

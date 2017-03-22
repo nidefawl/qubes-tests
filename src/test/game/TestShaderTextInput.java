@@ -168,7 +168,7 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
         	if (fb2 != null) {
-        		fb2.release();
+        		fb2.destroy();
         	}
             fb2 = new FrameBuffer(displayWidth, displayHeight);
             fb2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA8);
@@ -185,7 +185,7 @@ public class TestShaderTextInput extends GameBase implements ITextEdit {
     	try {
 
         	if (this.shaderHeavy != null) {
-        		this.shaderHeavy.release();
+        		this.shaderHeavy.destroy();
         	}
 
         	this.shaderHeavy = AssetManager.getInstance().loadShader(null, "debug/clouds4");

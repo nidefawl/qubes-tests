@@ -345,9 +345,9 @@ public class SkyboxSpriteTest extends GameBase {
 	public void setRenderResolution(int displayWidth, int displayHeight) {
         if (isRunning()) {
             Engine.resize(displayWidth, displayHeight);
-			if (sceneFB != null) sceneFB.release();
-			if (fbDeferred != null) fbDeferred.release();
-			if (fbSkybox != null) fbSkybox.release();
+			if (sceneFB != null) sceneFB.destroy();
+			if (fbDeferred != null) fbDeferred.destroy();
+			if (fbSkybox != null) fbSkybox.destroy();
 	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);

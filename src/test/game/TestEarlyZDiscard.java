@@ -109,7 +109,7 @@ public class TestEarlyZDiscard extends GameBase {
         	if (smaa == null) smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM);
         	smaa.init(displayWidth, displayHeight);
         	if (fb != null) {
-        		fb.release();
+        		fb.destroy();
         	}
             fb = new FrameBuffer(displayWidth, displayHeight);
             fb.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGB16F);
@@ -118,7 +118,7 @@ public class TestEarlyZDiscard extends GameBase {
             fb.setHasDepthAttachment();
             fb.setup(null);
         	if (fb2 != null) {
-        		fb2.release();
+        		fb2.destroy();
         	}
             fb2 = new FrameBuffer(displayWidth, displayHeight);
             fb2.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGB16F);
@@ -136,11 +136,11 @@ public class TestEarlyZDiscard extends GameBase {
 	private void loadShader() {
     	try {
         	if (this.shaderTexture != null) {
-        		this.shaderTexture.release();
+        		this.shaderTexture.destroy();
         	}
 
         	if (this.shaderHeavy != null) {
-        		this.shaderHeavy.release();
+        		this.shaderHeavy.destroy();
         	}
 
         	this.shaderHeavy = AssetManager.getInstance().loadShader(null, "debug/slowshader");
