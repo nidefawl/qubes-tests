@@ -478,7 +478,7 @@ public class TexturedMesh_VK extends GameBase {
 			// Only set mip map count if optimal tiling is used
 	        viewSubResRange.levelCount(this.texture.getNumMips());
 			// The view will be based on the texture's image
-	        view.image(this.texture.image);
+	        view.image(this.texture.getImage());
 	        LongBuffer pView = stack.longs(0);
 	        err = vkCreateImageView(vkContext.device, view, null, pView);
 	        if (err != VK_SUCCESS) {
