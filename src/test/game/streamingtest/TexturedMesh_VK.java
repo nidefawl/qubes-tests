@@ -53,6 +53,7 @@ public class TexturedMesh_VK extends GameBase {
 
 	private FrameBuffer frameBufferScene;
 	private FrameBuffer frameBufferShadow;
+	private FrameBuffer frameBufferShadow2;
 	private FrameBuffer frameBuffer;
 	private VkTesselatorState cubesShadow;
 	private VkDescriptor descTextureTerrain;
@@ -123,7 +124,11 @@ public class TexturedMesh_VK extends GameBase {
 
     		if (action == GLFW.GLFW_PRESS) {
     			switch (key) {
-    			case GLFW.GLFW_KEY_SPACE:
+    			case GLFW.GLFW_KEY_Q:
+    				Engine.INVERSE_MAP = !Engine.INVERSE_MAP;
+                    vkContext.reinitSwapchain = true;
+//    				System.out.println(cameraController.pos);
+//    				System.out.println(cameraController.pitch+","+cameraController.yaw);
 //    				renderModeReRecord = !renderModeReRecord;
 //    				forceRedraw = true;
 //    				Arrays.fill(recorded, false);
@@ -173,12 +178,12 @@ public class TexturedMesh_VK extends GameBase {
 
 	private void drawScene() {
 		VkTess tess = VkTess.instance;
-		int l = 8;
-		float d = 5;
-		float scale = 2.0f;
+		int l = 4;
+		float d = 4;
+		float scale = 3.0f;
 		for (int x = -l; x <= l; x++) {
 			for (int z = -l; z <= l; z++) {
-				for (int y = -l; y <= l; y++) {
+				for (int y = 1; y <= l; y++) {
 					tess.setOffset(x*d*scale, y*d*scale, z*d*scale);
 					tess.setNormals(0, 0, 1);
 					tess.add( scale,  scale, scale, 1, 1);
@@ -214,6 +219,22 @@ public class TexturedMesh_VK extends GameBase {
 				
 			}
 		}
+		tess.setOffset(0, 0, 0);
+		tess.setNormals(0, 1, 0);
+		float xf = 146;
+		float xy = -10;
+		tess.add(-xf, xy, xf, 0, 1);
+		tess.add( xf, xy, xf, 1, 1);
+		tess.add( xf, xy, -xf, 1, 0);
+		tess.add(-xf, xy, -xf, 0, 0);
+		 xf = 66;
+		 xy = 485;
+		 tess.setOffset(620, 0, 0);
+		tess.add(-xf, xy, xf, 0, 1);
+		tess.add( xf, xy, xf, 1, 1);
+		tess.add( xf, xy, -xf, 1, 0);
+		tess.add(-xf, xy, -xf, 0, 0);
+		tess.setOffset(0, 0, 0);
 		int stateVsize = tess.getVSize();
 		int stateVcount = tess.vertexcount;
 		tess.finish(VkTess.CREATE_QUAD_IDX_BUFFER, VkTess.DEVICE_LOCAL_UPLOAD, cube);
@@ -261,6 +282,11 @@ public class TexturedMesh_VK extends GameBase {
         			this.frameBufferShadow.build(VkRenderPasses.passShadow, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
 
     			}
+    			if (this.frameBufferShadow2 != null) {
+    				this.frameBufferShadow2.destroy();
+        			this.frameBufferShadow2.build(VkRenderPasses.passShadow, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
+
+    			}
 
     		}
             updateDescSets = true;
@@ -292,7 +318,7 @@ public class TexturedMesh_VK extends GameBase {
 		AssetTexture bin2 = AssetManagerClient.getInstance().loadPNGAsset("textures/blocks/ground/sand.png");
 		texture2dData1 = new TextureBinMips(bin1);
 		texture2dData2 = new TextureBinMips(bin2);
-		this.cameraController.set(-1.58f, 91.01f, 1.50f, 38.64f, 33.00f);
+		this.cameraController.set(98.31f, 88.73f, -130.53f, 26.86f, 224.16f);
 		if (loadingScreen != null)
         loadingScreen.setProgress(0, 1, "Something done");
 		this.frameBufferScene = new FrameBuffer(vkContext);
@@ -301,6 +327,9 @@ public class TexturedMesh_VK extends GameBase {
 		this.frameBufferShadow = new FrameBuffer(vkContext);
 		this.frameBufferShadow.fromRenderpass(VkRenderPasses.passShadow, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
 		
+		this.frameBufferShadow2 = new FrameBuffer(vkContext);
+		this.frameBufferShadow2.fromRenderpass(VkRenderPasses.passShadow, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
+
 		this.frameBuffer = new FrameBuffer(vkContext);
 		this.frameBuffer.fromRenderpass(VkRenderPasses.passFramebuffer, 0, VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
@@ -353,7 +382,7 @@ public class TexturedMesh_VK extends GameBase {
 		drawScene();
 		this.vBuf.init(vkContext);
 		this.vBuf.redraw();
-		showGUI(new GuiTest());
+//		showGUI(new GuiTest());
 	}
 	private void updateDescriptorSets() {
 		this.descTextureTerrainOnly.setBindingCombinedImageSampler(0, 
@@ -384,9 +413,9 @@ public class TexturedMesh_VK extends GameBase {
 
         FramebufferAttachment shadowColorAtt = this.frameBufferShadow.getAtt(1);
 		this.descTextureShadowColorDBG.setBindingCombinedImageSampler(0, 
-				this.frameBufferScene.getAtt(4).getView(), 
+				this.frameBufferShadow2.getAtt(1).getView(), 
 				sampler, 
-				this.frameBufferScene.getAtt(4).imageLayout);
+				this.frameBufferShadow2.getAtt(1).imageLayout);
 		
 
 		this.descTextureShadowDepth.setBindingCombinedImageSampler(0, 
@@ -474,6 +503,7 @@ public class TexturedMesh_VK extends GameBase {
         Engine.updateRenderResolution(Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
         Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
 
+//        System.out.println(TextureArrays.blockTextureArray.totalSlots);
         if (this.frameBufferShadow.getWidth() == Engine.getShadowMapTextureSize()&&this.frameBufferShadow.getHeight() == Engine.getShadowMapTextureSize())
         {
 //        	viewport.minDepth(0.0f);
@@ -482,34 +512,53 @@ public class TexturedMesh_VK extends GameBase {
 //            viewport.maxDepth(Engine.INVERSE_Z_BUFFER ? 0.0f : 1.0f);
             PushConstantBuffer buf = PushConstantBuffer.INST;
             int mapSize = Engine.getShadowMapTextureSize()/2;
-            
+            VkRenderPasses.passShadow.getClearValueDepth().set(Engine.INVERSE_MAP?0:1, 0);
             Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow, VK_SUBPASS_CONTENTS_INLINE);
 
             Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, descTextureTerrainOnly);
             Engine.setDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX, Engine.descriptorSetUboShadow);
             Engine.bindPipeline(VkPipelines.shadowSolid);
-            float f = 0.0f;
-            vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
-//            vkCmdSetDepthBias(commandBuffer, 0,0,0);
-            Engine.setViewport(0, 0, mapSize, mapSize, 0, 1);
-            buf.setMat4(0, Engine.getIdentityMatrix());
-            buf.setInt(16, 0);
-            vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
-			cubesShadow.bindAndDraw(commandBuffer);   
-            Engine.setViewport(mapSize, 0, mapSize, mapSize, 0, 1);
-            buf.setMat4(0, Engine.getIdentityMatrix());
-            buf.setInt(16, 1);
-            vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
-			cubesShadow.bindAndDraw(commandBuffer);   
-            Engine.setViewport(0, mapSize, mapSize, mapSize, 0, 1);
+            if (!Engine.INVERSE_MAP)
+            Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize(), 0, 1);
+            else 
+            	Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize(), 1, 0);
             buf.setMat4(0, Engine.getIdentityMatrix());
             buf.setInt(16, 2);
             vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
+//          Engine.clearDepth();
+            vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
 			cubesShadow.bindAndDraw(commandBuffer);   
+//            Engine.setViewport(mapSize, 0, mapSize, mapSize, 1, 0);
+//            buf.setMat4(0, Engine.getIdentityMatrix());
+//            buf.setInt(16, 1);
+//            vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
+//			cubesShadow.bindAndDraw(commandBuffer);   
+//            Engine.setViewport(0, mapSize, mapSize, mapSize, 1f, 0);
+//            buf.setMat4(0, Engine.getIdentityMatrix());
+//            buf.setInt(16, 2);
+//            vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowSolid.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
+//			cubesShadow.bindAndDraw(commandBuffer);   
 //	        Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize());
-//            Engine.clearDepth();
+            Engine.endRenderPass();
+            
+
+            VkRenderPasses.passShadow.getClearValueDepth().set(Engine.INVERSE_MAP?0:1, 0);
+            Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow2, VK_SUBPASS_CONTENTS_INLINE);
+            Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureShadowDepth);
+            Engine.bindPipeline(VkPipelines.shadowDebug);
+            if (!Engine.INVERSE_MAP)
+            Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize(), 0, 1);
+            else 
+            	Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize(), 1, 0);
+            buf.setMat4(0, Engine.getIdentityMatrix());
+            buf.setInt(16, 2);
+            vkCmdPushConstants(Engine.getDrawCmdBuffer(), VkPipelines.shadowDebug.getLayoutHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, buf.getBuf(64+4));
+			cubesShadow.bindAndDraw(commandBuffer);   
+//          Engine.clearDepth();
+
             Engine.endRenderPass();
             Engine.clearDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX);
+            
         } else {
         	System.err.println("SKIPPED, framebuffer is not sized");
         	System.err.printf("%dx%d vs %dx%d vs %dx%d vs %dx%d\n", 
@@ -545,11 +594,13 @@ public class TexturedMesh_VK extends GameBase {
 
             }
             {
+                VkRenderPasses.passFramebuffer.getClearValueDepth().set(0, 0);
                 Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
                 Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureCubeShadowMap);
                 Engine.setDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX, Engine.descriptorSetUboShadow);
                 Engine.bindPipeline(VkPipelines.main);
+                Engine.setViewport(0, 0, windowWidth, windowHeight, 1, 0);
 
         		if(cube.vertexcount > 0)
         		cube.bindAndDraw(commandBuffer);
@@ -563,13 +614,13 @@ public class TexturedMesh_VK extends GameBase {
                 Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureShadowDepth);
                 Engine.bindPipeline(VkPipelines.debugShader);
 //
-//        		tess.setColor(-1, 255);
-//        		tess.add(0, 0, 0, 0, 0);
-//        		tess.add(0, windowHeight, 0, 0, 1);
-//        		tess.add(windowWidth, windowHeight, 0, 1, 1);
-//        		tess.add(windowWidth, 0, 0, 1, 0);
-//        		tess.drawQuads();
-//        		tess.setOffset(0, 0, 0);
+        		tess.setColor(-1, 255);
+        		tess.add(0, 0, 0, 0, 0);
+        		tess.add(0, windowHeight, 0, 0, 1);
+        		tess.add(windowWidth, windowHeight, 0, 1, 1);
+        		tess.add(windowWidth, 0, 0, 1, 0);
+        		tess.drawQuads();
+        		tess.setOffset(0, 0, 0);
 //                Engine.setDescriptorSet(1, this.descTextureShadowDepth);
 //                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureGbufferColor);
 //                Engine.bindPipeline(VkPipelines.debugShader);
@@ -583,6 +634,8 @@ public class TexturedMesh_VK extends GameBase {
 //        		tess.drawQuads();
 //        		tess.setOffset(0, 0, 0);
 
+        		/*
+        		 * 
                 Engine.clearDescriptorSet(VkDescLayouts.TEX_DESC_IDX);
         		Engine.setPipeStateColored2D();
         		tess.setColor(0x0, 180);
@@ -591,7 +644,7 @@ public class TexturedMesh_VK extends GameBase {
         		tess.add(0, windowHeight, 0);
         		tess.add(300, windowHeight, 0);
         		tess.drawQuads();
-
+        		
 
                 LineGUI.INST.start(4F);
                 LineGUI.INST.add(32, 32, 0, -1, 1f);
@@ -626,6 +679,7 @@ public class TexturedMesh_VK extends GameBase {
                     tess.drawQuads();
                     tess.resetState();
                 }
+        		 */
 
                 double mx = Mouse.getX();
                 double my = Mouse.getY();
@@ -653,6 +707,7 @@ public class TexturedMesh_VK extends GameBase {
     	vkDestroySampler(vkContext.device, this.samplerShadowMap, null);
     	this.frameBufferScene.destroy();
     	this.frameBufferShadow.destroy();
+    	this.frameBufferShadow2.destroy();
     	this.texture.destroy();
     	super.shutdown();
     }
