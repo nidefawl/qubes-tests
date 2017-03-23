@@ -515,8 +515,8 @@ public class TexturedMesh_VK extends GameBase {
             VkRenderPasses.passShadow.getClearValueDepth().set(Engine.INVERSE_MAP?0:1, 0);
             Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow, VK_SUBPASS_CONTENTS_INLINE);
 
-            Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, descTextureTerrainOnly);
-            Engine.setDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX, Engine.descriptorSetUboShadow);
+            Engine.setDescriptorSet(VkDescLayouts.DESC2, descTextureTerrainOnly);
+            Engine.setDescriptorSet(VkDescLayouts.DESC3, Engine.descriptorSetUboShadow);
             Engine.bindPipeline(VkPipelines.shadowSolid);
             if (!Engine.INVERSE_MAP)
             Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize(), 0, 1);
@@ -545,7 +545,7 @@ public class TexturedMesh_VK extends GameBase {
 
             VkRenderPasses.passShadow.getClearValueDepth().set(Engine.INVERSE_MAP?0:1, 0);
             Engine.beginRenderPass(VkRenderPasses.passShadow, this.frameBufferShadow2, VK_SUBPASS_CONTENTS_INLINE);
-            Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureShadowDepth);
+            Engine.setDescriptorSet(VkDescLayouts.DESC2, this.descTextureShadowDepth);
             Engine.bindPipeline(VkPipelines.shadowDebug);
             if (!Engine.INVERSE_MAP)
             Engine.setViewport(0, 0, Engine.getShadowMapTextureSize(), Engine.getShadowMapTextureSize(), 0, 1);
@@ -558,7 +558,7 @@ public class TexturedMesh_VK extends GameBase {
 //          Engine.clearDepth();
 
             Engine.endRenderPass();
-            Engine.clearDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX);
+            Engine.clearDescriptorSet(VkDescLayouts.DESC3);
             
         } else {
         	System.err.println("SKIPPED, framebuffer is not sized");
@@ -579,8 +579,8 @@ public class TexturedMesh_VK extends GameBase {
             {
             	
                 Engine.beginRenderPass(VkRenderPasses.passTerrain_Pass0, this.frameBufferScene, VK_SUBPASS_CONTENTS_INLINE);
-                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureTerrain);
-                Engine.setDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX, Engine.descriptorSetUboConstants);
+                Engine.setDescriptorSet(VkDescLayouts.DESC2, this.descTextureTerrain);
+                Engine.setDescriptorSet(VkDescLayouts.DESC3, Engine.descriptorSetUboConstants);
 //                
                 Engine.bindPipeline(VkPipelines.terrain);
                 this.vBuf.draw(commandBuffer, 0);
@@ -598,8 +598,8 @@ public class TexturedMesh_VK extends GameBase {
                 VkRenderPasses.passFramebuffer.getClearValueDepth().set(0, 0);
                 Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureCubeShadowMap);
-                Engine.setDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX, Engine.descriptorSetUboShadow);
+                Engine.setDescriptorSet(VkDescLayouts.DESC2, this.descTextureCubeShadowMap);
+                Engine.setDescriptorSet(VkDescLayouts.DESC3, Engine.descriptorSetUboShadow);
                 Engine.bindPipeline(VkPipelines.main);
                 Engine.setViewport(0, 0, windowWidth, windowHeight, 1, 0);
 
@@ -608,11 +608,11 @@ public class TexturedMesh_VK extends GameBase {
 //        		if(plane.vertexcount > 0)
 //        		plane.bindAndDraw(commandBuffer);
 
-                Engine.clearDescriptorSet(VkDescLayouts.UBO_CONSTANTS_DESC_IDX);
+                Engine.clearDescriptorSet(VkDescLayouts.DESC3);
 
         		VkTess tess = VkTess.instance;
                 Engine.clearDepth();
-                Engine.setDescriptorSet(VkDescLayouts.TEX_DESC_IDX, this.descTextureShadowDepth);
+                Engine.setDescriptorSet(VkDescLayouts.DESC2, this.descTextureShadowDepth);
                 Engine.bindPipeline(VkPipelines.debugShader);
 //
         		tess.setColor(-1, 255);
