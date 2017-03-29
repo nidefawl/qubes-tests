@@ -24,7 +24,7 @@ public class MeshListSeperate extends MeshList {
 			setupVAO();
 		}
 		for (VMeshBuffer m : array) {
-			((VMeshBufferSeperate) m).vertexBuffer = new GLTriBuffer(GL15.GL_STATIC_DRAW);
+			((VMeshBufferSeperate) m).vertexBuffer = new GLTriBuffer(false);
 			((VMeshBufferSeperate) m).faceAttrBuffer = new GLAttrBuffer();
 		}
 	}

@@ -278,7 +278,7 @@ public class VRApp extends GameBase {
 
 	@Override
 	public void lateInitGame() {
-		cube = new GLTriBuffer(GL15.GL_STREAM_DRAW);
+		cube = new GLTriBuffer(false);
 		this.font=FontRenderer.get(0, 22, 0);
 		
 

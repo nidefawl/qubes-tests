@@ -204,7 +204,7 @@ public class FrustumTest extends GameBase {
 	@Override
 	public void lateInitGame() {
 		this.vertexBuf = new VertexBuffer(1024*1024);
-		this.buf = new GLTriBuffer(GL15.GL_STATIC_DRAW);
+		this.buf = new GLTriBuffer(false);
 		
 
 		redraw();

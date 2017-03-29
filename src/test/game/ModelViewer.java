@@ -15,6 +15,7 @@ import org.lwjgl.opengl.*;
 import nidefawl.qubes.Game;
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetManager;
+import nidefawl.qubes.assets.RenderAssets;
 import nidefawl.qubes.async.AsyncTasks;
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
@@ -23,12 +24,13 @@ import nidefawl.qubes.gui.windows.GuiWindow;
 import nidefawl.qubes.gui.windows.GuiWindowManager;
 import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.models.EntityModel;
-import nidefawl.qubes.models.EntityModelManager;
+import nidefawl.qubes.models.*;
 import nidefawl.qubes.models.qmodel.*;
 import nidefawl.qubes.models.render.*;
+import nidefawl.qubes.models.render.QModelDirectRender.QModelModelObject;
 import nidefawl.qubes.perf.GPUProfiler;
 import nidefawl.qubes.render.RenderersGL;
+import nidefawl.qubes.render.gui.SingleBlockRenderAtlas;
 import nidefawl.qubes.render.post.HBAOPlus;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
@@ -74,7 +76,7 @@ public class ModelViewer extends GameBase {
     boolean once = false;
 
 	QModelBatchedRender renderBatched;
-	QModelRender renderSingle;
+	QModelDirectRender renderSingle;
 	QModelRender curRender = null;
 	public QModelProperties config = new QModelProperties();
 	private boolean showDbg=false;
@@ -198,31 +200,19 @@ public class ModelViewer extends GameBase {
         Shaders.normals.enable();
         Shaders.normals.setProgramUniformMatrix4("model_matrix", false, Engine.getIdentityMatrix().get(), false);
 		tessState.drawQuads();
-		
-
-        float absTimeInSeconds = ((GameBase.ticksran+fTime)/GameBase.TICKS_PER_SEC);
-        curRender.reset();
-
-        this.curRender.setModel(entityModel.model);
-        this.config.rot.x = 0;
-        this.config.rot.y = -90;
-		this.entityModel.setPose(this.curRender, this.config, absTimeInSeconds, fTime);
 
 		this.curRender.render(fTime);
-        curRender.reset();
-		
-//		this.shaderModelSingle.enable();
-//		this.shaderModelSingle.setProgramUniformMatrix4("model_matrix", false, this.render.modelMat.get(), false);
-//		this.shaderModelSingle.setProgramUniformMatrix4("normal_matrix", false, this.render.normalMat.get(), false);
-//		render.render(this.entityModel, fTime);
+
 		
         GL40.glBlendFuncSeparatei(0, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         Engine.checkGLError("Pass0");
         
         FrameBuffer.unbindFramebuffer();
-		HBAOPlus.renderAO();
-        Engine.checkGLError("renderAO");
+        if (HBAOPlus.hasContext) {
+    		HBAOPlus.renderAO();
+            Engine.checkGLError("renderAO");
+        }
         
         Engine.setBlend(false);
         glDisable(GL_DEPTH_TEST);
@@ -294,18 +284,18 @@ public class ModelViewer extends GameBase {
         Engine.setBlend(true);
         if (!this.renderBatchedMode) {
             Engine.bindVAO(GLVAO.vaoModel);
-            for (int i = 0; i < curRender.rendered.size(); i++) {
-    	        QModelObject obj = curRender.rendered.get(i);
+            for (int i = 0; i < renderSingle.rendered.size(); i++) {
+    	        QModelModelObject obj = renderSingle.rendered.get(i);
     	        if (showNormals) {
 //    	            UniformBuffer.setNormalMat(this.render.normalMat.get());
 //    	            UniformBuffer.setNormalMat(Engine.getMatSceneNormal().get());
     	    		Engine.lineWidth(1.5f);
     	    		glPointSize(12.0f);
     		        Shaders.normals.enable();
-    		        Shaders.normals.setProgramUniformMatrix4("model_matrix", false, curRender.modelMat.get(), false);
+    		        Shaders.normals.setProgramUniformMatrix4("model_matrix", false, obj.modelMat.get(), false);
 
-    	            for (QModelGroup grp : obj.listGroups) {
-    	            	curRender.renderGroup(this.entityModel.model, obj, grp, fTime);
+    	            for (QModelGroup grp : obj.modelObject.listGroups) {
+    	            	curRender.renderGroup(obj.model, obj.modelObject, grp, fTime);
     	            }
 //    	            UniformBuffer.setNormalMat(Engine.getMatSceneNormal().get());
     	        }
@@ -313,26 +303,30 @@ public class ModelViewer extends GameBase {
     	    		Engine.lineWidth(2f);
     	    		glPointSize(12.0f);
     				Shaders.wireframe.enable();
-    		        Shaders.wireframe.setProgramUniformMatrix4("model_matrix", false, curRender.modelMat.get(), false);
+    		        Shaders.wireframe.setProgramUniformMatrix4("model_matrix", false, obj.modelMat.get(), false);
     		        Shaders.wireframe.setProgramUniform3f("in_offset", Engine.GLOBAL_OFFSET.x, Engine.GLOBAL_OFFSET.y, Engine.GLOBAL_OFFSET.z);
     		        Shaders.wireframe.setProgramUniform1i("num_vertex", 3);
     		        Shaders.wireframe.setProgramUniform1f("thickness", 0.2f);
     		        Shaders.wireframe.setProgramUniform1f("maxDistance", 110);
     		        Shaders.wireframe.setProgramUniform4f("linecolor", 1, 0.2f, 0.2f, 1);
-    	            for (QModelGroup grp : obj.listGroups) {
-    	            	curRender.renderGroup(this.entityModel.model, obj, grp, fTime);
+    	            for (QModelGroup grp : obj.modelObject.listGroups) {
+    	            	curRender.renderGroup(obj.model, obj.modelObject, grp, fTime);
     	            }
     	        }
             }
             Engine.checkGLError("render normals+wireframe");
         }
-        if (showBones) {
-	        glClear(GL11.GL_DEPTH_BUFFER_BIT);
-        	Engine.setBlend(false);
-        	
-        	renderBones((ModelRigged)this.entityModel.model, curRender.modelMat);
-        	Engine.setBlend(true);
-            Engine.checkGLError("renderbones");
+        if (!this.renderBatchedMode) {
+
+            if (showBones&&!renderSingle.rendered.isEmpty()) {
+    	        QModelModelObject obj = renderSingle.rendered.get(0);
+    	        glClear(GL11.GL_DEPTH_BUFFER_BIT);
+            	Engine.setBlend(false);
+            	
+            	renderBones((ModelRigged)obj.model, obj.modelMat);
+            	Engine.setBlend(true);
+                Engine.checkGLError("renderbones");
+            }
         }
     
         
@@ -497,6 +491,17 @@ public class ModelViewer extends GameBase {
         } else {
         	curRender = renderSingle;
         }
+        float absTimeInSeconds = ((GameBase.ticksran+f)/GameBase.TICKS_PER_SEC);
+        curRender.reset();
+
+        this.config.rot.x = 0;
+        this.config.rot.y = -90;
+        this.config.setModelAtt(ItemModel.modelAxe.loadedModels[0]);
+		this.entityModel.setPoseAndSubmit(this.curRender, this.config, absTimeInSeconds, f);
+
+        if (curRender == renderBatched) {
+        	renderBatched.upload(f);
+        }
 	}
 
 	@Override
@@ -547,9 +552,12 @@ public class ModelViewer extends GameBase {
 	public void initGame() {
 		Engine.RENDER_SETTINGS.ssr = 0;
         Engine.init(INIT_MODELVIEWER.setFBSize(windowWidth, windowHeight));
-		TextureManager.getInstance().init();
-        EntityModel.preInit();
-        EntityModel.postInit();
+        if (!Engine.isVulkan) {
+            TextureManager.getInstance().init();
+        }
+        BlockModelManager.getInstance().init();
+        ItemModelManager.getInstance().init();
+        SingleBlockRenderAtlas.getInstance().init();
 		setVSync(true);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		this.cameraController.set(-3.93f, 2.21f, 0.13f, 25.3f, 89.6f);
@@ -560,7 +568,7 @@ public class ModelViewer extends GameBase {
 
 	@Override
 	public void lateInitGame() {
-        EntityModelManager.getInstance().reload();
+        RenderAssets.load(null, loadingScreen);
         renderBatched.init();
         renderBatched.setRenderer(QModelBatchedRender.RENDERER_WORLD_MODELVIEWER);
         renderSingle.init();

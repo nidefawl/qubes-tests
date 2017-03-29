@@ -25,7 +25,7 @@ public class MeshListInterleavedNV_Half extends MeshList {
 			setupVAO();
 		}
 		for (VMeshBuffer m : array) {
-			((VMeshBufferInterleavedNV) m).vertexBuffer = new GLTriBuffer(GL15.GL_STATIC_DRAW);
+			((VMeshBufferInterleavedNV) m).vertexBuffer = new GLTriBuffer(false);
 		}
 	}
 

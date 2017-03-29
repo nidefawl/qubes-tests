@@ -458,8 +458,8 @@ public class ParticlePerformanceTest extends GameBase {
         }
 		
 		this.font=FontRenderer.get(0, 22, 0);
-		cubeFormat1 = new GLTriBuffer(GL15.GL_STREAM_DRAW);
-		cubeFormat2 = new GLTriBuffer(GL15.GL_STREAM_DRAW);
+		cubeFormat1 = new GLTriBuffer(false);
+		cubeFormat2 = new GLTriBuffer(false);
 		redraw();
 		
 

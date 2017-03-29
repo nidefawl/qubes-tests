@@ -355,7 +355,7 @@ public class ParticlePerformanceTest2 extends GameBase {
         RenderAssets.load(this.renderSettings, loadingScreen);
 		
 		this.font=FontRenderer.get(0, 22, 0);
-		cubeFormat1 = new GLTriBuffer(GL15.GL_STREAM_DRAW);
+		cubeFormat1 = new GLTriBuffer(false);
 		this.faceAttrBuffer = new GLAttrBuffer();
 		this.bufferDataFace = new VertexBuffer(1024*1024);
 		redraw();

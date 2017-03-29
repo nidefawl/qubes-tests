@@ -22,7 +22,7 @@ public class MeshListInterleaved extends MeshList {
 			setupVAO();
 		}
 		for (VMeshBuffer m : array) {
-			((VMeshBufferInterleaved) m).vertexBuffer = new GLTriBuffer(GL15.GL_STATIC_DRAW);
+			((VMeshBufferInterleaved) m).vertexBuffer = new GLTriBuffer(false);
 		}
 	}
 
