@@ -60,8 +60,7 @@ public class TestSMAA extends GameBase {
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
         	}
-        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB, false);
-        	smaa.init(Engine.displayWidth, Engine.displayHeight);
+        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, SRGB, false, Engine.displayWidth, Engine.displayHeight);
         	Shaders.initShaders();
         	initShaders();
 		}
@@ -296,20 +295,22 @@ public class TestSMAA extends GameBase {
 	private int texH;
 	private FontRenderer font;
 	private void readImage(int texture) {
-		glBindTexture(GL_TEXTURE_2D, texture);
-		Engine.checkGLError("glBindTexture");
-		Engine.checkGLError("glGetTexLevelParameteri1");
-		this.texW = GL11.glGetTexLevelParameteri(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH); // get width of GL texture
-		Engine.checkGLError("glGetTexLevelParameteri2");
-		this.texH = GL11.glGetTexLevelParameteri(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT); // get height of GL texture
-		Engine.checkGLError("glGetTexLevelParameteri3");
-		int size = this.texW*this.texH*4;
-		if (texData == null || texData.length != size) {
-			texData = new int[size];
-		}
-		glGetTexImage(GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, texData);
-		Engine.checkGLError("glGetTexImage");
+		if (texture > 11110) {
+			glBindTexture(GL_TEXTURE_2D, texture);
+			Engine.checkGLError("glBindTexture");
+			Engine.checkGLError("glGetTexLevelParameteri1");
+			this.texW = GL11.glGetTexLevelParameteri(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH); // get width of GL texture
+			Engine.checkGLError("glGetTexLevelParameteri2");
+			this.texH = GL11.glGetTexLevelParameteri(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT); // get height of GL texture
+			Engine.checkGLError("glGetTexLevelParameteri3");
+			int size = this.texW*this.texH*4;
+			if (texData == null || texData.length != size) {
+				texData = new int[size];
+			}
+			glGetTexImage(GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, texData);
+			Engine.checkGLError("glGetTexImage");
 
+		}
 	}
 	@Override
 	public void preRenderUpdate(float f) {
@@ -331,9 +332,9 @@ public class TestSMAA extends GameBase {
             Engine.resize(displayWidth, displayHeight);
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
+        		smaa = null;
         	}
-        	if (smaa == null) smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM);
-        	smaa.init(displayWidth, displayHeight);
+        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, displayWidth, displayHeight);
         }
 	}
 
@@ -354,10 +355,10 @@ public class TestSMAA extends GameBase {
 	@Override
 	public void lateInitGame() {
         int format = SRGB?GL21.GL_SRGB8_ALPHA8:GL_RGBA8;
-//		this.t = AssetManager.getInstance().loadPNGAsset("textures/Unigine01.png");
-//		this.image = TextureManager.getInstance().makeNewTexture(t, false, true, 0, format);
-		this.t = AssetManager.getInstance().loadTexture("textures/Unigine01_PNG_DXT1_1.DDS", Type.DDS, false);
-		this.image = TextureManager.getInstance().makeDDS2DTexture(t, false, true);
+		this.t = AssetManager.getInstance().loadPNGAsset("textures/Unigine01.png");
+		this.image = TextureManager.getInstance().makeNewTexture(t, false, true, 0, format);
+//		this.t = AssetManager.getInstance().loadTexture("textures/Unigine01_PNG_DXT1_1.DDS", Type.DDS, false);
+//		this.image = TextureManager.getInstance().makeDDS2DTexture(t, false, true);
         this.outputBuffer = FrameBuffer.make(null, t.getWidth(), t.getHeight(), format, false, true);
         initShaders();
 		Engine.setBlend(false);

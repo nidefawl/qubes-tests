@@ -1,4 +1,4 @@
-package test.game.streamingtest;
+package test.game.vulkan;
 
 
 import static org.lwjgl.system.MemoryStack.stackPush;

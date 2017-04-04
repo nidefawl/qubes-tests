@@ -305,8 +305,7 @@ public class TestTemporalAA extends GameBase {
     	if (smaa != null) {
     		smaa.releaseAll(EResourceType.FRAMEBUFFER);
     	}
-    	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, false, temporal);
-    	smaa.init(Engine.fbWidth(), Engine.fbHeight());
+    	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, false, false, temporal, Engine.fbWidth(), Engine.fbHeight());
 	}
 	@Override
 	public void tick() {

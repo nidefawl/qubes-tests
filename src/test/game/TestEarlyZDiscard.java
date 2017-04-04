@@ -106,8 +106,7 @@ public class TestEarlyZDiscard extends GameBase {
         	if (smaa != null) {
         		smaa.releaseAll(EResourceType.FRAMEBUFFER);
         	}
-        	if (smaa == null) smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM);
-        	smaa.init(displayWidth, displayHeight);
+        	smaa = new SMAA(SMAA.SMAA_PRESET_MEDIUM, displayWidth, displayHeight);
         	if (fb != null) {
         		fb.destroy();
         	}

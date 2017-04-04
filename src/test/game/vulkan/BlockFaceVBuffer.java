@@ -1,4 +1,4 @@
-package test.game.streamingtest;
+package test.game.vulkan;
 
 import static nidefawl.qubes.render.WorldRenderer.NUM_PASSES;
 import static org.lwjgl.vulkan.VK10.*;
