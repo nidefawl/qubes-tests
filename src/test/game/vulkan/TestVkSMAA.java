@@ -1,14 +1,10 @@
 package test.game.vulkan;
 
 
-import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
-import java.nio.LongBuffer;
-
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkViewport;
 
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.*;
@@ -19,13 +15,8 @@ import nidefawl.qubes.gui.LoadingScreen;
 import nidefawl.qubes.gui.windows.GuiContext;
 import nidefawl.qubes.gui.windows.GuiWindowManager;
 import nidefawl.qubes.input.CameraController;
-import nidefawl.qubes.input.Mouse;
-import nidefawl.qubes.render.RenderersVulkan;
-import nidefawl.qubes.render.gui.BoxGUI;
-import nidefawl.qubes.render.gui.LineGUI;
 import nidefawl.qubes.shader.UniformBuffer;
 import nidefawl.qubes.texture.TextureBinMips;
-import nidefawl.qubes.texture.array.TextureArrays;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vulkan.*;
 import nidefawl.qubes.vulkan.FrameBuffer;
@@ -58,7 +49,6 @@ public class TestVkSMAA extends GameBase {
 
 
 	
-	private VkTexture texture;
 	
 	private FontRenderer font;
 	private VkTexture vkTex;
@@ -316,7 +306,6 @@ public class TestVkSMAA extends GameBase {
         if (isVulkan)
             vkContext.syncAllFences();
         RenderAssets.destroy();
-    	this.texture.destroy();
     	super.shutdown();
     }
 	@Override
