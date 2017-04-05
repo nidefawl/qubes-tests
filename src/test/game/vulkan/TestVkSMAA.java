@@ -194,6 +194,8 @@ public class TestVkSMAA extends GameBase {
 		GLFW.glfwSetWindowSize(windowId, t.getWidth(), t.getHeight());
 		EngineInitSettings settings = EngineInitSettings.INIT_NONE.setFBSize(windowWidth, windowHeight).setVulkan(true).setInverseZ();
 		settings.initShadowProj = true;
+		Engine.RENDER_SETTINGS.smaaMode=1;
+		Engine.RENDER_SETTINGS.smaaPredication=false;
 		Engine.init(settings);
         GameBase.loadingScreen = new LoadingScreen();
 		if (loadingScreen != null)
@@ -277,14 +279,14 @@ public class TestVkSMAA extends GameBase {
 //            vkContext.swapChain.blitFramebufferAndPreset(commandBuffer, frameBuffer, 0);
         }
         Engine.disableAutoBindDesc();
-        Engine.vkSMAAContext.render(this.descTextureFB);
+        VkDescriptor smaaOutput = Engine.vkSMAAContext.render(this.descTextureFB, null, null);
         Engine.enableAutoBindDesc();
 
         if (this.frameBuffer2.getWidth() == vkContext.swapChain.width&&this.frameBuffer2.getHeight() == vkContext.swapChain.height)
         {
         	
             Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer2, VK_SUBPASS_CONTENTS_INLINE);
-            Engine.setDescriptorSet(VkDescLayouts.DESC2, Engine.vkSMAAContext.descOutput);
+            Engine.setDescriptorSet(VkDescLayouts.DESC2, smaaOutput);
             Engine.setPipeStateTextured2D(false);
     		VkTess tess = VkTess.instance;
             tess.setColor(-1, 255);
