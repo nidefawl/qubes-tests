@@ -247,7 +247,7 @@ public class TestVkSMAA extends GameBase {
         if (this.frameBuffer.getWidth() == vkContext.swapChain.width&&this.frameBuffer.getHeight() == vkContext.swapChain.height)
         {
         	
-            Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer, VK_SUBPASS_CONTENTS_INLINE);
+            Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer);
             Engine.setDescriptorSet(VkDescLayouts.DESC2, this.descTextureInput);
             Engine.setPipeStateTextured2D(false);
     		VkTess tess = VkTess.instance;
@@ -275,7 +275,7 @@ public class TestVkSMAA extends GameBase {
         if (this.frameBuffer2.getWidth() == vkContext.swapChain.width&&this.frameBuffer2.getHeight() == vkContext.swapChain.height)
         {
         	
-            Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer2, VK_SUBPASS_CONTENTS_INLINE);
+            Engine.beginRenderPass(VkRenderPasses.passFramebuffer, this.frameBuffer2);
             Engine.setDescriptorSet(VkDescLayouts.DESC2, smaaOutput);
             Engine.setPipeStateTextured2D(false);
     		VkTess tess = VkTess.instance;

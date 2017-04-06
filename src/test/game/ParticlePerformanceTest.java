@@ -449,11 +449,14 @@ public class ParticlePerformanceTest extends GameBase {
             });
         }
         while(!AsyncTasks.completeTasks()) {
-            float pr = 0;
+            int nToLoad = 0;
+            int nLoaded = 0;
             for (int i = 0; i < arrays.length; i++) {
-                pr+=arrays[i].getProgress();
+                nToLoad+=arrays[i].numTotalTextures;
+                nLoaded+=arrays[i].numLoaded;
+                nLoaded+=arrays[i].numUploaded;
             }
-            pr/=(float)arrays.length;
+            float pr = nLoaded / (float) nToLoad;
             loadingScreen.setProgress(1, pr, "Loading...");
         }
 		
