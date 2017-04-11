@@ -11,3 +11,5 @@ syntax: regexp
 ^sphax\\*$
 ^commandhistory.txt$
 ^settings.yml$
+^hs_err_pid.*$
+^preprocessed_shader_src\\*$
