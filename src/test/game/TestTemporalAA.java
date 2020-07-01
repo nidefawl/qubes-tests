@@ -173,18 +173,22 @@ public class TestTemporalAA extends GameBase {
         	GPUProfiler.end();
 //		smaa.render(Engine.getSceneFB().getTexture(0), 0, TMgr.getEmpty(), 0, null);
 //		buffer.put(Engine.getMatSceneVP().get()); 
+        boolean debugVelTex = false;
+        if (debugVelTex) {
+
         glClearColor(0.11F, 0.82F, 1.00F, 1F);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-      Shaders.textured.enable();
-      GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, velocity);
-      Engine.drawFullscreenQuad();
+            Shaders.textured.enable();
+            GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, velocity);
+            Engine.drawFullscreenQuad();
+        }
 //		
 
         glClear(GL11.GL_DEPTH_BUFFER_BIT);
 
-		ArrayList<String> n = this.glProfileResults;
+		ArrayList<String> profileTextLines = this.glProfileResults;
 		Engine.setBlend(true);
-		int hT = n.size() * 18 + 22;
+		int hT = profileTextLines.size() * 18 + 22;
 //		int hT = debugVars.size() * 18 + 50;
 		int yT = Engine.displayHeight - hT;
 		Shaders.colored.enable();
@@ -202,10 +206,10 @@ public class TestTemporalAA extends GameBase {
 //			this.font.drawString("" + debugVars.get(i), 10, y, -1, true, 1.0f);
 //			y += 18;
 //		}
-		if (!n.isEmpty()) {
+		if (!profileTextLines.isEmpty()) {
 			Shaders.textured.enable();
-			for (int i = 0; i < n.size(); i++) {
-    			this.font.drawString(n.get(i), 10, y, -1, true, 1.0f, 0);	
+			for (int i = 0; i < profileTextLines.size(); i++) {
+    			this.font.drawString(profileTextLines.get(i), 10, y, -1, true, 1.0f, 0);	
     			y += 18;
 			}
 		}

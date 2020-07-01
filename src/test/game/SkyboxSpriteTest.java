@@ -20,6 +20,7 @@ import nidefawl.qubes.gl.*;
 import nidefawl.qubes.gl.GL;
 import nidefawl.qubes.input.CameraController;
 import nidefawl.qubes.meshing.BlockFaceAttr;
+import nidefawl.qubes.meshing.BlockFaceAttrUINT;
 import nidefawl.qubes.perf.GPUProfiler;
 import nidefawl.qubes.shader.*;
 import nidefawl.qubes.texture.TMgr;
@@ -394,7 +395,7 @@ public class SkyboxSpriteTest extends GameBase {
 	}
 
 
-	BlockFaceAttr attr = new BlockFaceAttr();
+	BlockFaceAttr attr = new BlockFaceAttrUINT();
 	private int vaoPos;
 	List<Cloud> clouds = Lists.newArrayList();
 	private ByteBuffer bufMat;

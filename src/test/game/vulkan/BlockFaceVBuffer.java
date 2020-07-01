@@ -7,6 +7,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import nidefawl.qubes.gl.*;
 import nidefawl.qubes.meshing.BlockFaceAttr;
+import nidefawl.qubes.meshing.BlockFaceAttrUINT;
 import nidefawl.qubes.vec.Dir;
 import nidefawl.qubes.vulkan.*;
 
@@ -19,7 +20,7 @@ public class BlockFaceVBuffer {
     static final int REGION_DIST = 6;
 	float size = 0.5f;
 
-	BlockFaceAttr attr = new BlockFaceAttr(); 
+	BlockFaceAttr attr = new BlockFaceAttrUINT(); 
 	private VertexBuffer bufferDataVertex;
     public int[]     vertexCount   = new int[NUM_PASSES];
     public boolean[] hasPass       = new boolean[NUM_PASSES];

@@ -23,16 +23,16 @@ import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vec3D;
 
-public class TestFontRenderer extends GameBase {
+public class TestPoints extends GameBase {
 	final CameraController cameraController = new CameraController();
 
-	public TestFontRenderer() {
+	public TestPoints() {
 		TICKS_PER_SEC = 20;
 	}
 	public static void main(String[] args) {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new TestFontRenderer().startGame();
+		new TestPoints().startGame();
 	}
 	
 	@Override
@@ -48,7 +48,7 @@ public class TestFontRenderer extends GameBase {
 		Engine.setBlend(true);
 	}
 	
-	private int image;
+	private int imageMask;
 	SMAA smaa;
 	FrameBuffer fb;
 	FrameBuffer fb2;
@@ -79,80 +79,32 @@ public class TestFontRenderer extends GameBase {
 
 	@Override
 	public void render(float f) {
-		glEnable(GL_DEPTH_TEST);
-		this.fb.bind();
-		this.fb.clearFrameBuffer();
-        this.shaderTexture.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.image);
-        Engine.drawFullscreenQuad();
-        this.shaderTexture.enable();
-		this.fb2.bind();
-		this.fb2.clearFrameBuffer();
-		this.fb.bindRead();
-        GL30.glBlitFramebuffer(0, 0, this.fb.getWidth(), this.fb.getHeight(), 0, 0, this.fb2.getWidth(), this.fb2.getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        FrameBuffer.unbindReadFramebuffer();
-        
-        Engine.setDepthFunc(GL_EQUAL);
-		
-        this.shaderHeavy.enable();
-        Engine.drawFullscreenQuad();
-		FrameBuffer.unbindFramebuffer();
-
-        Engine.setDepthFunc(GL_LEQUAL);
+//		glEnable(GL_DEPTH_TEST);
+//		this.fb.bind();
+//		this.fb.clearFrameBuffer();
+//        this.shaderTexture.enable();
+//        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.imageMask);
+//        Engine.drawFullscreenQuad();
+//		this.fb2.bind();
+//		this.fb2.clearFrameBuffer();
+//		this.fb.bindRead();
+//        GL30.glBlitFramebuffer(0, 0, this.fb.getWidth(), this.fb.getHeight(), 0, 0, this.fb2.getWidth(), this.fb2.getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+//        FrameBuffer.unbindReadFramebuffer();
+//        
+//        Engine.setDepthFunc(GL_EQUAL);
+//		
+//        this.shaderHeavy.enable();
+//        Engine.drawFullscreenQuad();
+//		FrameBuffer.unbindFramebuffer();
+//
+//        Engine.setDepthFunc(GL_LEQUAL);
         glClearColor(0.2f,0.2f,0.2f,0);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-//
-        Shaders.textured.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
-        Engine.drawFullscreenQuad();
-		{
-			String text = "Can you read me?";
-			Shaders.textured.enable();
-			FontRenderer fr = FontRenderer.get(0, 18, 1);
-			float tw = fr.getStringWidth(text);
-			fr.drawString(text, ((float)Engine.displayWidth-tw)/2.0f, 110, -1, true, 1.0f);
-		}
-		{
-			String text = "----";
-			Shaders.textured.enable();
-			FontRenderer fr = FontRenderer.get(0, 10, 1);
-			fr.drawString(text, ((float)Engine.displayWidth)/2.0f, 140, -1, true, 1.0f, 2);
-			float tw = fr.getStringWidth(text);
-			fr.drawString(text, ((float)Engine.displayWidth-tw)/2.0f, 170, -1, true, 1.0f);
-		}
-		{
-			String text = "----";
-			Shaders.textured.enable();
-			FontRenderer fr = FontRenderer.get(0, 10, 1);
-			fr.drawString(text, ((float)Engine.displayWidth)/2.0f, 210, -1, true, 1.0f, 0);
-		}
-		{
-			String text = "Right\nMulti\nLine";
-			Shaders.textured.enable();
-			FontRenderer fr = FontRenderer.get(0, 22, 1);
-			float tw = fr.getStringWidth(text);
-			fr.drawString(text, Engine.displayWidth, 140, -1, true, 1.0f, 1);
-		}
-		{
-			String text = "Left\nMulti\nLine";
-			Shaders.textured.enable();
-			FontRenderer fr = FontRenderer.get(0, 22, 1);
-			float tw = fr.getStringWidth(text);
-			fr.drawString(text, 0, 140, -1, true, 1.0f, 0);
-		}
-		{
-			String text = "Center\nMulti\nLine";
-			Shaders.textured.enable();
-			FontRenderer fr = FontRenderer.get(0, 22, 1);
-			float tw = fr.getStringWidth(text);
-			fr.drawString(text, Engine.displayWidth/2.0f, 340, -1, true, 1.0f, 2);
-		}
-		/*Shaders.colored.enable();
-		Engine.lineWidth(2.0f);
-		Tess.instance.setColorF(0xff00ff, 1.0f);
-		Tess.instance.add(Engine.displayWidth/2.0f, 0);
-		Tess.instance.add(Engine.displayWidth/2.0f, Engine.displayHeight-1);
-		Tess.instance.draw(GL_LINES);*/
+////
+//        Shaders.textured.enable();
+//        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, this.fb2.getTexture(0));
+//        Engine.drawFullscreenQuad();
+        
         Engine.setPipeStateColored2D();
         LineGUI.INST.start(2.0f);
         LineGUI.INST.add(Engine.displayWidth/2.0f, 0, 0, 0xff00ff, 1.0f);
@@ -248,7 +200,7 @@ public class TestFontRenderer extends GameBase {
 	public void lateInitGame() {
 		AssetTexture t = AssetManager.getInstance().loadPNGAsset("textures/mask.png");
 		GLFW.glfwSetWindowSize(windowId, t.getWidth(), t.getHeight());
-		this.image = TextureManager.getInstance().makeNewTexture(t, false, true, 0);
+		this.imageMask = TextureManager.getInstance().makeNewTexture(t, false, true, 0);
 	}
 
 	@Override

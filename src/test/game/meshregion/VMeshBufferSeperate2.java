@@ -3,8 +3,8 @@ package test.game.meshregion;
 import nidefawl.qubes.gl.GLAttrBuffer;
 import nidefawl.qubes.gl.GLTriBuffer;
 
-public class VMeshBufferSeperate extends VMeshBuffer {
+public class VMeshBufferSeperate2 extends VMeshBuffer {
 
 	public GLTriBuffer vertexBuffer;
-	public GLAttrBuffer faceAttrBuffer;
+	public GLAttrBuffer[] faceAttrBuffers;
 }

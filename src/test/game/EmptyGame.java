@@ -2,11 +2,14 @@ package test.game;
 
 import java.io.*;
 
+import org.lwjgl.opengl.GL13;
+
 import nidefawl.qubes.GameBase;
 import nidefawl.qubes.assets.AssetBinary;
 import nidefawl.qubes.assets.AssetManagerClient;
 import nidefawl.qubes.gl.Engine;
 import nidefawl.qubes.texture.TextureBinMips;
+import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 
 public class EmptyGame extends GameBase {
@@ -19,6 +22,14 @@ public class EmptyGame extends GameBase {
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
 		new EmptyGame().startGame();
+	}
+
+	@Override
+	public void initGame() {
+        Engine.init(windowWidth, windowHeight);
+		TextureManager.getInstance().init();
+		setVSync(false);
+		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 	}
 	
 
@@ -67,12 +78,6 @@ public class EmptyGame extends GameBase {
 	public void tick() {
 		// TODO Auto-generated method stub
 
-	}
-
-	@Override
-	public void initGame() {
-		// TODO Auto-generated method stub
-		setVSync(false);
 	}
 
 	@Override

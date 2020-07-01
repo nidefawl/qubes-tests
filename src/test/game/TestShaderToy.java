@@ -83,7 +83,7 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 		if (reloadTick <= 0) {
 			loadShader();
 //			Shaders.initShaders();
-			reloadTick = 8;
+			reloadTick = 1;
 		}
 	}
 
@@ -169,14 +169,14 @@ public class TestShaderToy extends GameBase implements ITextEdit {
 
 		List<Var> debugVars = this.shaderHeavy.readDebugVars();
 		Engine.setBlend(true);
-		int hT = debugVars.size() * 18 + 50;
+		int hT = debugVars.size() * 18 + 25;
 		int yT = Engine.displayHeight - hT;
 		Shaders.colored.enable();
 		Tess.instance.setColorF(0, 0.7f);
-		Tess.instance.add(600, yT);
+		Tess.instance.add(130, yT);
 		Tess.instance.add(0, yT);
 		Tess.instance.add(0, yT + hT);
-		Tess.instance.add(600, yT + hT);
+		Tess.instance.add(130, yT + hT);
 		Tess.instance.drawQuads();
 		Shaders.textured.enable();
 		int y = yT + 20;

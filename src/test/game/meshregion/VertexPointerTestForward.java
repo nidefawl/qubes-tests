@@ -27,7 +27,7 @@ import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.*;
 import test.game.*;
 
-public class VertexPointerTest extends GameBase {
+public class VertexPointerTestForward extends GameBase {
     static final int REGION_DIST = 4;
 	final CameraController cameraController = new CameraController();
 	private FrameBuffer sceneFB;
@@ -39,14 +39,14 @@ public class VertexPointerTest extends GameBase {
 	// public Vector3f fogColor = new Vector3f(0.7F, 0.82F, 1F);
 	public Vector3f fogColor = new Vector3f(0.7F, 0.82F, 1F);
 
-	public VertexPointerTest() {
+	public VertexPointerTestForward() {
 		TICKS_PER_SEC = 20;
 	}
 	public static void main(String[] args) {
 		TICKS_PER_SEC = 20;
         GameContext.setSideAndPath(Side.CLIENT, "../Game/");
 		GameContext.earlyInit();
-		new VertexPointerTest().startGame();
+		new VertexPointerTestForward().startGame();
 	}
 	
 
@@ -72,7 +72,7 @@ public class VertexPointerTest extends GameBase {
                     return null;
                 }
             });
-            Shader new_terr_shader = assetMgr.loadShader(newshaders, "terrain/terrain", new IShaderDef() {
+            Shader new_terr_shader = assetMgr.loadShader(newshaders, "terrain/terrain_forward", new IShaderDef() {
 				
 				@Override
 				public String getDefinition(String define) {
@@ -177,38 +177,9 @@ public class VertexPointerTest extends GameBase {
 	    skybox2.bindAndDraw(GL_QUADS);
 	    if (GL_ERROR_CHECKS)
 	        Engine.checkGLError("skyShader.drawSkybox");
-	    Shader.disable();
 	    Engine.enableDepthMask(true);
-		Shaders.colored3D.enable();
-//		tessState.drawQuads();
-//		modelShader.enable();
-//		modelShader.setProgramUniformMatrix4("model_matrix", false, Engine.getIdentityMatrix().get(), false);
-//		glPointSize(4.0f);
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, TMgr.getEmptyWhite());
-//		Engine.pxStack.push();
-		Engine.setBlend(false);
-		int k = 20;
-		int r = 2;
-//        this.buf.bind();
-//        MeshedRegion.enableVertexPtrs(5);
-//		for (int i = -k; i <= k; i++) {
-//			for (int j = -k; j <= k; j++) {
-//				tmp.set(i*r, 0, j*r);
-//				int nn = Engine.camFrustum.sphereInFrustum(tmp, 2);
-//				if (nn > -1) {
-//					Engine.pxStack.setTranslation(i*r, 0, j*r);	
-////					tessState.drawQuads();
-//			        this.buf.drawElements();
-//				} else{
-//					System.out.println("out "+nn);
-//				}
-//						
-//
-//			}
-//		}
-//        this.buf.unbind();
-		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D_ARRAY, arr.glid);
 		
+		GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D_ARRAY, arr.glid);
 
 		Engine.pxStack.push();
 		terrainShader.enable();
@@ -216,11 +187,9 @@ public class VertexPointerTest extends GameBase {
         int iLen = this.lists.length;
         float fI = iLen;
         int mode = ((int)(((ticksran+f)/90f)%fI))%iLen;
-//        mode = this.lists.length-1;
         MeshList list = this.lists[mode];
         String renderMode = list.getName();
         GPUProfiler.start(renderMode);
-//        list.bindVAO();
         list.draw();
         Engine.checkGLError(renderMode+" list.draw");
         GPUProfiler.end();
@@ -228,44 +197,43 @@ public class VertexPointerTest extends GameBase {
 		Engine.pxStack.pop();
 
 		FrameBuffer.unbindFramebuffer();
-		String name = "Pass0";
-        GLDebugTextures.readTexture(false, name, "texColor", Engine.getSceneFB().getTexture(0));
-        GLDebugTextures.readTexture(false, name, "texNormals", Engine.getSceneFB().getTexture(1));
-        GLDebugTextures.readTexture(false, name, "texMaterial", Engine.getSceneFB().getTexture(2));
-        GLDebugTextures.readTexture(false, name, "blocklight", Engine.getSceneFB().getTexture(3));
-        GLDebugTextures.readTexture(false, name, "texDepth", Engine.getSceneFB().getDepthTex(), 2);
-        Engine.checkGLError("Pass0");
-        fbDeferred.bind();
-        fbDeferred.clearFrameBuffer();
-        shaderDeferred.enable();
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
-        GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(1));
-        GL.bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(2));
-        GL.bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, Engine.getSceneFB().getDepthTex());
-        GL.bindTexture(GL_TEXTURE4, GL_TEXTURE_2D, TMgr.getEmptyWhite()); //SHADOW
-        GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty()); //LIGHTCOMPUTE
-        GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
-        GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); //SSAO
-        Engine.drawFullscreenQuad();
-		FrameBuffer.unbindFramebuffer();
-        GLDebugTextures.readTexture(true, "Deferred", "Output", fbDeferred.getTexture(0));
+//		String name = "Pass0";
+//        GLDebugTextures.readTexture(false, name, "texColor", Engine.getSceneFB().getTexture(0));
+//        GLDebugTextures.readTexture(false, name, "texNormals", Engine.getSceneFB().getTexture(1));
+//        GLDebugTextures.readTexture(false, name, "texMaterial", Engine.getSceneFB().getTexture(2));
+//        GLDebugTextures.readTexture(false, name, "blocklight", Engine.getSceneFB().getTexture(3));
+//        GLDebugTextures.readTexture(false, name, "texDepth", Engine.getSceneFB().getDepthTex(), 2);
+//        Engine.checkGLError("Pass0");
+//        fbDeferred.bind();
+//        fbDeferred.clearFrameBuffer();
+//        shaderDeferred.enable();
+//        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
+//        GL.bindTexture(GL_TEXTURE1, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(1));
+//        GL.bindTexture(GL_TEXTURE2, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(2));
+//        GL.bindTexture(GL_TEXTURE3, GL_TEXTURE_2D, Engine.getSceneFB().getDepthTex());
+//        GL.bindTexture(GL_TEXTURE4, GL_TEXTURE_2D, TMgr.getEmptyWhite()); //SHADOW
+//        GL.bindTexture(GL_TEXTURE5, GL_TEXTURE_2D, TMgr.getEmpty()); //LIGHTCOMPUTE
+//        GL.bindTexture(GL_TEXTURE6, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(3));
+//        GL.bindTexture(GL_TEXTURE7, GL_TEXTURE_2D, TMgr.getEmptyWhite()); //SSAO
+//        Engine.drawFullscreenQuad();
+//		FrameBuffer.unbindFramebuffer();
+//        GLDebugTextures.readTexture(true, "Deferred", "Output", fbDeferred.getTexture(0));
+		
         glClearColor(0,0,0,0);
         glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         Shaders.tonemap.enable();
         Shaders.tonemap.setProgramUniform1f("constexposure", 70);
-        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, fbDeferred.getTexture(0));
+        GL.bindTexture(GL_TEXTURE0, GL_TEXTURE_2D, Engine.getSceneFB().getTexture(0));
         Engine.drawFullscreenQuad();
-        FrameBuffer.unbindFramebuffer();
+        
         glClear(GL11.GL_DEPTH_BUFFER_BIT);
 //        Shaders.wireframe.enable();
 //        Shaders.wireframe.setProgramUniform1i("num_vertex", 4);
 //        Shaders.wireframe.setProgramUniform1f("thickness", 0.2f);
 //        Shaders.wireframe.setProgramUniform1f("maxDistance", 110);
 //        Shaders.wireframe.setProgramUniform4f("linecolor", 1, 0.2f, 0.2f, 1);
-//        
 //        list.draw();
-//        Engine.bindVAO(null);
-        
+        Engine.bindVAO(null);
 //        GLDebugTextures.drawAll(Engine.displayWidth, Engine.displayHeight);
         Engine.checkGLError("drawAll");
         GPUProfiler.end();
@@ -320,14 +288,14 @@ public class VertexPointerTest extends GameBase {
 			if (fbDeferred != null) fbDeferred.destroy();
 	        sceneFB = new FrameBuffer(displayWidth, displayHeight);
 	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT0, GL_RGBA16F);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT2, GL_RGBA16UI);
-	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT3, GL_RGB16F);
-	        sceneFB.setFilter(GL_COLOR_ATTACHMENT2, GL_NEAREST, GL_NEAREST);
+//	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT1, GL_RGB16F);
+//	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT2, GL_RGBA16UI);
+//	        sceneFB.setColorAtt(GL_COLOR_ATTACHMENT3, GL_RGB16F);
+//	        sceneFB.setFilter(GL_COLOR_ATTACHMENT2, GL_NEAREST, GL_NEAREST);
 	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT0, 0F, 0F, 0F, 0F);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT1, 0F, 0F, 0F, 0F);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT2, 0F, 0F, 0F, 0F);
-	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT3, 0F, 0F, 0F, 0F);
+//	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT1, 0F, 0F, 0F, 0F);
+//	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT2, 0F, 0F, 0F, 0F);
+//	        sceneFB.setClearColor(GL_COLOR_ATTACHMENT3, 0F, 0F, 0F, 0F);
 	        sceneFB.setHasDepthAttachment();
 	        sceneFB.setup(null);
 	        Engine.setSceneFB(sceneFB);
@@ -354,10 +322,7 @@ public class VertexPointerTest extends GameBase {
 	MeshList listIntNV = new MeshListInterleavedNV(false);
 	MeshList listInt = new MeshListInterleaved();
 	MeshList listSep = new MeshListSeperate();
-	MeshList listSep2 = new MeshListSeperate2();
-	MeshList[] lists = {
-//			listIntNV, listIntNVBuf, listIntNV_Half, 
-			listInt, listSep, listSep2};
+	MeshList[] lists = {listIntNV, listIntNVBuf, listIntNV_Half, listInt, listSep};
 	public void redraw() {
         Engine.checkGLError("redraw");
 //		System.exit(0);

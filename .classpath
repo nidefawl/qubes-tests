@@ -4,6 +4,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/Game"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/JOpenVR"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/lwjgl-nightly-2017-03-15-custom"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/lwjgl-nightly-2017-06-14-nanovg"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
