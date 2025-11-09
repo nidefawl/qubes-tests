@@ -33,7 +33,7 @@ import nidefawl.qubes.texture.TextureManager;
 import nidefawl.qubes.util.*;
 import nidefawl.qubes.vec.Vector3f;
 import nidefawl.qubes.world.IChunkWorld;
-
+/** Loads chunks from region files of an already generated world and renders them using forward rendering */
 public class TestChunkLoader extends GameBase {
 	final CameraController cameraController = new CameraController();
 

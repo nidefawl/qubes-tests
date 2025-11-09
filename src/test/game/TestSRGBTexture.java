@@ -133,7 +133,7 @@ public class TestSRGBTexture extends GameBase {
 		Engine.setBlend(false);
 		Engine.enableDepthMask(false);
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
-		this.t = AssetManager.getInstance().loadPNGAsset("textures/blocks/ground/dirt.png");
+		this.t = AssetManager.getInstance().loadPNGAsset("textures/blocks_512/ground/dirt.png");
 		this.imageSRGB = TextureManager.getInstance().makeNewTexture(t, false, true, 0, GL21.GL_SRGB8_ALPHA8);
 		this.imageRGB = TextureManager.getInstance().makeNewTexture(t, false, true, 0, GL11.GL_RGBA8);
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
